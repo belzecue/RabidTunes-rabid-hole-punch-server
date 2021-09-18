@@ -18,7 +18,7 @@ python3 main.py <port>
 ```
 Notes:
 - Python 3.9 is the Python version recommended, but if you have an earlier 3.x version that should work too
-- Replace <port> with a port of your choice (must be the same as the port opened for the machine)
+- Replace `<port>` with a port of your choice (must be the same as the port opened for the machine)
 
 Server will start running in the port specified
 
@@ -32,7 +32,7 @@ And it will print more information
 
 The server will generate log files with the name `rabid-hole-punch.log`
 
-## Usage (WORK IN PROGRESS)
+## Usage
 
 This server will start listening in the UDP port of your choice and it will wait for requests to arrive
 
@@ -53,7 +53,7 @@ Examples:
 
 After sending this, if the session was created, the server will respond with the following udp message `i:SuperPlayer`. It is the info prefix `i` followed by the current list of players (currently just one)
 
-### 1 (Client) - Connect to session request - c:<sessionname>:<playername>:<sessionpassword>
+### 1 (Client) - Connect to session request - `c:<sessionname>:<playername>:<sessionpassword>`
 
 Session name must have between 1-10 alphanumeric characters
 Player name must have between 1-12 alphanumeric characters
@@ -102,5 +102,12 @@ You can send this message in any given time inside a session that has not starte
 Example:
 `x:NiceRoom:NicePlayer`
 
-### Error codes
-- Error 1 (WORK IN PROGRESS)
+## Error codes sent by the server
+
+### Error 1 (WORK IN PROGRESS)
+
+## What to do after receiveing the players ips and ports
+
+Once you receive the IPs and ports of all players, the communication with the server should end. WORK IN PROGRESS
+
+
