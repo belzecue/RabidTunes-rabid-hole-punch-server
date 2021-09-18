@@ -111,10 +111,43 @@ Example:
 
 ## Error codes sent by the server
 
-### Error 1 (WORK IN PROGRESS)
+### ERR_REQUEST_INVALID = "error:invalid_request"
+Bad formatted request. Probably some characters are invalid or the names too long
+### ERR_SESSION_EXISTS = "error:session_exists"
+Tried to create a session with a name that already exists
+### ERR_SESSION_NON_EXISTENT = "error:session_non_existent"
+Tried to connect to a session that does not exist anymore
+### ERR_SESSION_PASSWORD_MISMATCH = "error:password_mismatch"
+Passwords do not match
+### ERR_SESSION_SINGLE_PLAYER = "error:only_one_player_in_session"
+Tried to start a session with one player only
+### ERR_SESSION_FULL = "error:session_full"
+Tried to join a session that's full
+### ERR_SESSION_PLAYER_NAME_IN_USE = "error:player_name_in_use"
+Tried to join a session with a player name that is already in use
+### ERR_SESSION_PLAYER_NON_EXISTENT = "error:non_existent_player"
+Tried to update or kick a player that does not exist in the given session
+### ERR_SESSION_PLAYER_NON_HOST = "error:non_host_player"
+Tried to execute a command with a player that is not host
+### ERR_SESSION_PLAYER_KICKED_BY_HOST = "error:kicked_by_host"
+Kicked by host
+### ERR_SESSION_PLAYER_EXIT = "error:player_exited_session"
+Sent when a player exits the session
+### ERR_SESSION_NOT_STARTED = "error:session_not_started"
+Sent when player sends confirmation for a non-started session
+### ERR_SESSION_TIMEOUT = "error:session_timeout"
+Session timed out (sessions have a max time to live)
+### ERR_PLAYER_TIMEOUT = "error:player_timeout"
+Player timed out (too much time without sending a ping)
 
 ## What to do after receiveing the players ips and ports
 
-Once you receive the IPs and ports of all players, the communication with the server should end. WORK IN PROGRESS
+Once you receive the IPs and ports of all players, the communication with the server should end. Now you have to start sending messages to the other peers. In this phase, the workflow is as follows:
+
+### SENDING GREETINGS (WIP)
+
+### SENDING CONFIRMATIONS (WIP)
+
+### STARTING SERVER AND CONNECTING (WIP)
 
 
