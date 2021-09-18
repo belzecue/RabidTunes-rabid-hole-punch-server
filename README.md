@@ -14,10 +14,10 @@ Python Server that allows peer to peer communication via UDP Hole Punching betwe
 Clone this repository to any folder of your choice and run the following command. 
 
 ```
-python3.9 main.py <port>
+python3 main.py <port>
 ```
 Notes:
-- python3.9 is the Python version recommended, but if you have an earlier 3.x version that should work too
+- Python 3.9 is the Python version recommended, but if you have an earlier 3.x version that should work too
 - Replace <port> with a port of your choice (must be the same as the port opened for the machine)
 
 Server will start running in the port specified
@@ -25,7 +25,7 @@ Server will start running in the port specified
 If some weird behaviour is happening and you want to print more information to debug, you can run the server using
 
 ```
-python3.9 main.py <port> DEBUG
+python3 main.py <port> DEBUG
 ```
 
 And it will print more information
@@ -40,7 +40,7 @@ You can implement a client for this server in any game engine of your choice, bu
 
 In case you want to implement your own client, here are the different requests you can send to this server
 
-### Req1 example fill more
+### Req1 (example, fill more)
 
 ### Error codes
 - Error 1
