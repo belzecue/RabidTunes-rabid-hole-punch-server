@@ -6,6 +6,7 @@ HolePunch Server that allows peer to peer communication via UDP Hole Punching be
 
 - A public accessible machine with a udp port open
 - Python3 installed
+- Twisted installed. With Python3 installed you can run `pip install twisted` to do this
 
 
 ## Instructions
