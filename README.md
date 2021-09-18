@@ -40,11 +40,14 @@ You can implement a client for this server in any game engine of your choice, [b
 
 In case you want to implement your own client, here is the workflow and the UDP packets you have to send to the server in order to the hole punch process to work:
 
-### 1 (Host) - Create session request - h:<sessionname>:<playername>:<maxplayers>:<sessionpassword>
+### 1 (Host) - Create session request - `h:<sessionname>:<playername>:<maxplayers>:<sessionpassword>`
 
 Session name must have between 1-10 alphanumeric characters
+
 Player name must have between 1-12 alphanumeric characters
+
 Max players must be a number between 2 and 12
+
 Session password must have between 1-12 alphanumeric characters. This part is optional
 
 Examples:
@@ -56,7 +59,9 @@ After sending this, if the session was created, the server will respond with the
 ### 1 (Client) - Connect to session request - `c:<sessionname>:<playername>:<sessionpassword>`
 
 Session name must have between 1-10 alphanumeric characters
+
 Player name must have between 1-12 alphanumeric characters
+
 Session password must have between 1-12 alphanumeric characters. This part is optional
 
 Examples:
@@ -66,7 +71,7 @@ Examples:
 After sending this, if the session exists and has enough room for you, the server will respond with the following udp message `i:SuperPlayer:CoolPlayer`. It is the info prefix `i` followed by the current list of players
 
 
-### 2 (Everybody) - Ping request - p:<sessionname>:<playername>
+### 2 (Everybody) - Ping request - `p:<sessionname>:<playername>`
 
 After creating/connecting to the session, you have to send regularly some pings, otherwise the server will kick you out. Sending one ping at least each second will suffice in most cases.
 
@@ -74,7 +79,7 @@ Examples:
 `p:NiceRoom:SuperPlayer`
 `p:NiceRoom:CoolPlayer`
 
-### 3 (Host) - Start Session - s:<sessionname>:<playername>
+### 3 (Host) - Start Session - `s:<sessionname>:<playername>`
 
 When enough players have connected, as host you can send this message so the server will answer with the IPs and ports of all peers. Sending this message will make the server start sending the start message to all peers. The start message changes depending on the receiver, for example, if a session has 3 players, SuperPlayer, CoolPlayer and NicePlayer:
 - SuperPlayer will receive this message: `s:<SuperPlayerPort>:CoolPlayer:<CoolPlayerIP>:<CoolPlayerPort>;NicePlayer:<NicePlayerIP>:<NicePlayerPort>`
@@ -83,22 +88,24 @@ When enough players have connected, as host you can send this message so the ser
 
 If a non-host player receives this message, it is safe to assume that the first player that receives in this message is the host. Both CoolPlayer and NicePlayer received 'SuperPlayer' as first player in the list, so they will assume that's the host.
 
-### 4 (Everybody) - Confirm Start Session info received - y:<sessionname>:<playername>
+### 4 (Everybody) - Confirm Start Session info received - `y:<sessionname>:<playername>`
 
 After receiveing the list of players message, it is nice to send a confirmation to let the server know that we received the info, so it stops sending us the start session message. It is not only to save resources, but to prevent it to spam our ports.
 
 Example:
 `y:NiceRoom:SuperPlayer`
 
-### Optional message in session (Host) - Kick player from session - k:<sessionname>:<player-name-to-kick>
+### Optional message in session (Host) - Kick player from session - `k:<sessionname>:<player-name-to-kick>`
 
 If you are the host you can kick a player by sending this message to the server. In the current version this won't prevent the player to re-enter the session, unfortunately.
+
 Example:
 `k:NiceRoom:CoolPlayer`
 
-### Optional message in session (Everybody) - Exit session - x:<sessionname>:<playername>
+### Optional message in session (Everybody) - Exit session - `x:<sessionname>:<playername>`
 
 You can send this message in any given time inside a session that has not started yet to exit that session.
+
 Example:
 `x:NiceRoom:NicePlayer`
 
