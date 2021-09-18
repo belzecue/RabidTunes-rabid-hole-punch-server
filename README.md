@@ -11,14 +11,12 @@ HolePunch Server that allows peer to peer communication via UDP Hole Punching be
 
 ## Instructions
 
-Clone this repository to any folder of your choice and run the following commands
+Clone this repository to any folder of your choice and run the following command. 
+- python3.9 is the Python version recommended, but if you have an earlier 3.x version that should work too
+- Replace <port> with a port of your choice (must be the same as the port opened)
 
 ```
-This is the first command
-```
-
-```
-This is the second command
+python3.9 main.py <port>
 ```
 
 Server will start running in the port specified
@@ -26,9 +24,9 @@ Server will start running in the port specified
 If some weird behaviour is happening and you want to print more information to debug, you can run the server using
 
 ```
-This is another command
+python3.9 main.py <port> DEBUG
 ```
 
 And it will print more information
 
-The server will generate log files with the name `logfilename`
+The server will generate log files with the name `rabid-hole-punch.log`
