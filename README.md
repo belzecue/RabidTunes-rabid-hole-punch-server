@@ -2,6 +2,8 @@
 
 Python Server that allows peer to peer communication via UDP Hole Punching between devices that are behind NAT
 
+**Please note that although UDP Hole Punching is a great technique it is not successful 100% of the time due to different NAT and firewall configurations**
+
 ## Requirements
 
 - A public accessible machine with a udp port open
