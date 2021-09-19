@@ -205,4 +205,4 @@ Imagine some peers receive greets from each other so they have enough greetings 
 
 # Credits
 
-WIP
+Credits to [SLGamesCregg](https://github.com/SLGamesCregg) for his [Godot HolePuncher plugin](https://godotengine.org/asset-library/asset/608), because this Hole Punch Server was initially based upon his server python file, which was based upon [stylesuxx udp hole punching server](https://github.com/stylesuxx/udp-hole-punching/).
