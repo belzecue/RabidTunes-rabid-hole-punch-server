@@ -22,7 +22,7 @@ Notes:
 - Python 3.9 is the Python version recommended, but if you have an earlier 3.x version that should work too
 - Replace `<port>` with a port of your choice (must be the same as the port opened for the machine)
 
-Server will start running in the port specified
+Server will start running in the specified port
 
 If some weird behaviour is happening and you want to print more information to debug, you can run the server using
 
@@ -53,10 +53,10 @@ Max players must be a number between 2 and 12
 Session password must have between 1-12 alphanumeric characters. This part is optional
 
 Examples:
-`h:NiceRoom:SuperPlayer:4:Pass`
-`h:NiceRoom:SuperPlayer:4` (no password)
+`h:NiceRoom:Alice:4:Pass`
+`h:NiceRoom:Alice:4` (no password)
 
-After sending this, if the session was created, the server will respond with the following udp message `i:SuperPlayer`. It is the info prefix `i` followed by the current list of players (currently just one)
+After sending this, if the session was created, the server will respond with the following udp message `i:Alice`. It is the info prefix `i` followed by the current list of players (currently just one)
 
 ### 1 (Client) - Connect to session request - `c:<sessionname>:<playername>:<sessionpassword>`
 
@@ -67,10 +67,10 @@ Player name must have between 1-12 alphanumeric characters
 Session password must have between 1-12 alphanumeric characters. This part is optional
 
 Examples:
-`c:NiceRoom:CoolPlayer:Pass`
-`c:NiceRoom:CoolPlayer`
+`c:NiceRoom:Bob:Pass`
+`c:NiceRoom:Bob`
 
-After sending this, if the session exists and has enough room for you, the server will respond with the following udp message `i:SuperPlayer:CoolPlayer`. It is the info prefix `i` followed by the current list of players
+After sending this, if the session exists and has enough room for you, the server will respond with the following udp message `i:Alice:Bob`. It is the info prefix `i` followed by the current list of players
 
 
 ### 2 (Everybody) - Ping request - `p:<sessionname>:<playername>`
@@ -78,24 +78,24 @@ After sending this, if the session exists and has enough room for you, the serve
 After creating/connecting to the session, you have to send regularly some pings, otherwise the server will kick you out. Sending one ping at least each second will suffice in most cases.
 
 Examples:
-`p:NiceRoom:SuperPlayer`
-`p:NiceRoom:CoolPlayer`
+`p:NiceRoom:Alice`
+`p:NiceRoom:Bob`
 
 ### 3 (Host) - Start Session - `s:<sessionname>:<playername>`
 
-When enough players have connected, as host you can send this message so the server will answer with the IPs and ports of all peers. Sending this message will make the server start sending the start message to all peers. The start message changes depending on the receiver, for example, if a session has 3 players, SuperPlayer, CoolPlayer and NicePlayer:
-- SuperPlayer will receive this message: `s:<SuperPlayerPort>:CoolPlayer:<CoolPlayerIP>:<CoolPlayerPort>;NicePlayer:<NicePlayerIP>:<NicePlayerPort>`
-- CoolPlayer will receive this message: `s:<CoolPlayerPort>:SuperPlayer:<SuperPlayerIP>:<SuperPlayerPort>;NicePlayer:<NicePlayerIP>:<NicePlayerPort>`
-- NicePlayer will receive this message: `s:<NicePlayerPort>:SuperPlayer:<SuperPlayerIP>:<SuperPlayerPort>;CoolPlayer:<CoolPlayerIP>:<CoolPlayerPort>`
+When enough players have connected, as host you can send this message so the server will answer with the IPs and ports of all peers. Sending this message will make the server start sending the start message to all peers. The start message changes depending on the receiver, for example, if a session has 3 players, Alice, Bob and Carol:
+- Alice will receive this message: `s:<AlicePort>:Bob:<BobIP>:<BobPort>;Carol:<CarolIP>:<CarolPort>`
+- Bob will receive this message: `s:<BobPort>:Alice:<AliceIP>:<AlicePort>;Carol:<CarolIP>:<CarolPort>`
+- Carol will receive this message: `s:<CarolPort>:Alice:<AliceIP>:<AlicePort>;Bob:<BobIP>:<BobPort>`
 
-If a non-host player receives this message, it is safe to assume that the first player that receives in this message is the host. Both CoolPlayer and NicePlayer received 'SuperPlayer' as first player in the list, so they will assume that's the host.
+If a non-host player receives this message, it is safe to assume that the first player that receives in this message is the host. Both Bob and Carol received 'Alice' as first player in the list, so they will assume that's the host.
 
 ### 4 (Everybody) - Confirm Start Session info received - `y:<sessionname>:<playername>`
 
 After receiving the list of players message, it is nice to send a confirmation to let the server know that we received the info, so it stops sending us the start session message. It is not only to save resources, but to prevent it to spam our ports.
 
 Example:
-`y:NiceRoom:SuperPlayer`
+`y:NiceRoom:Alice`
 
 After sending this message, the communications with this relay server should be finished. [Check out this section to see what's next.](https://gitlab.com/RabidTunes/rabid-hole-punch-server#what-to-do-after-receiving-the-players-ips-and-ports)
 
@@ -104,14 +104,14 @@ After sending this message, the communications with this relay server should be 
 If you are the host you can kick a player by sending this message to the server. In the current version this won't prevent the player to re-enter the session, unfortunately.
 
 Example:
-`k:NiceRoom:CoolPlayer`
+`k:NiceRoom:Bob`
 
 ### Optional message in session (Everybody) - Exit session - `x:<sessionname>:<playername>`
 
 You can send this message in any given time inside a session that has not started yet to exit that session.
 
 Example:
-`x:NiceRoom:NicePlayer`
+`x:NiceRoom:Carol`
 
 ## Error codes sent by the server
 
@@ -157,9 +157,9 @@ In this phase, each peer should start listening on the port that the server sent
 For this reason, each peer should send multiple messages to other peers. For each peer it should be sent a message containing at least the port used to send that message to that specific peer. Since we do not know for sure the port, we should also have a **window of ports to test**. Something like port received +- 8.
 
 Example:
-Let's say SuperPlayer received that their port is 1234 and also received that CoolPlayer's port is 5555. SuperPlayer should listen to port 1234 and start sending UDP messages to CoolPlayer's IP. Regarding CoolPlayer's port, SuperPlayer should first start trying the port 5555, but they should also send some messages on near ports just to be sure that the greeting packet arrives. 
+Let's say Alice received that their port is 1234 and also received that Bob's port is 5555. Alice should listen to port 1234 and start sending UDP messages to Bob's IP. Regarding Bob's port, Alice should first start trying the port 5555, but they should also send some messages on near ports just to be sure that the greeting packet arrives. 
 
-So SuperPlayer will test sending that message to the ports 5547, 5548, 5549, 5550, 5551, 5552, 5553, 5554, 5556, 5557, 5558, 5559, 5560, 5561, 5562 and 5563. It is extremely important that on each message the port sent is the port used to send that message, so when CoolPlayer receives the message, they can know which port the other peer used to reach them.
+So Alice will test sending that message to the ports 5547, 5548, 5549, 5550, 5551, 5552, 5553, 5554, 5556, 5557, 5558, 5559, 5560, 5561, 5562 and 5563. It is extremely important that on each message the port sent is the port used to send that message, so when Bob receives the message, they can know which port the other peer used to reach them.
 
 After receiving enough greetings, each peer can decide what is the port they should use for communications. If the server said that a peer's port is 1234 but all greetings were received on poert 1240, that port should be used instead, so you should close the previously opened port for listening and change the port.
 
@@ -169,18 +169,18 @@ After this you can move on to the next phase.
 
 After finishing sending greetings, each peer can be sure about one thing: their own port. The previous phase goal was to confirm the port opened for each peer. But each peers still doesn't know what is the confirmed port of the other peers.
 
-That's why in this stage we will send each peer confirmed port to other peers, so the other peers know what is the confirmed port for each peer. So for example if SuperPlayer confirme that their port is 1234, they should send to the others that port number alongside their name.
+That's why in this stage we will send each peer confirmed port to other peers, so the other peers know what is the confirmed port for each peer. So for example if Alice confirme that their port is 1234, they should send to the others that port number alongside their name.
 
 But here's the catch: we still don't know the confirmed port for the others, so we still do have to send the confirmations inside a window of ports to be sure that our message reaches the others.
 
 Example:
-Let's say SuperPlayer confirmed that their port is 1234. CoolPlayer however noticed that the server said that their port is 5555 but all the greetings were received on port 5560 instead. SuperPlayer will keep listening on port 1234 but CoolPlayer will switch to port 5560.
+Let's say Alice confirmed that their port is 1234. Bob however noticed that the server said that their port is 5555 but all the greetings were received on port 5560 instead. Alice will keep listening on port 1234 but Bob will switch to port 5560.
 
-After this, SuperPlayer will send messages to CoolPlayer with the port 1234 so CoolPlayer can confirm that SuperPlayer's port is 1234... but SuperPlayer messages will initially fail, because SuperPlayer first attempt will be at port 5555 and CoolPlayer knows that this port is no good! This is why SuperPlayer should try nearby ports so the message will reach CoolPlayer at some point.
+After this, Alice will send messages to Bob with the port 1234 so Bob can confirm that Alice's port is 1234... but Alice messages will initially fail, because Alice first attempt will be at port 5555 and Bob knows that this port is no good! This is why Alice should try nearby ports so the message will reach Bob at some point.
 
-CoolPlayer however will send message to SuperPlayer with the confirmed port 5560, and this message will reach SuperPlayer with no issues with the first port attempted (1234) as this port hasn't changed.
+Bob however will send message to Alice with the confirmed port 5560, and this message will reach Alice with no issues with the first port attempted (1234) as this port hasn't changed.
 
-One thing SuperPlayer (and any player) should do to speed up the confirmation process is, when SuperPlayer receives CoolPlayer's confirmation message, is to stop testing nearby ports and just use the port that CoolPlayer has confirmed for them.
+One thing Alice (and any player) should do to speed up the confirmation process is, when Alice receives Bob's confirmation message, is to stop testing nearby ports and just use the port that Bob has confirmed for them.
 
 Remember: **Greetings phase is about confirming each peer's _own port_. Confirmations phase is about confirming _other's port_.**
 
