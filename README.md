@@ -38,7 +38,7 @@ This server will start listening in the UDP port of your choice and it will wait
 
 You can implement a client for this server in any game engine of your choice, [but you have one already available for the Godot game engine here](https://gitlab.com/RabidTunes/rabid-hole-punch-godot)
 
-In case you want to implement your own client, here is the workflow and the UDP packets you have to send to the server in order to the hole punch process to work:
+**In case you want to implement your own client**, here is the workflow and the UDP packets you have to send to the server in order to the hole punch process to work:
 
 ### 1 (Host) - Create session request - `h:<sessionname>:<playername>:<maxplayers>:<sessionpassword>`
 
@@ -90,10 +90,12 @@ If a non-host player receives this message, it is safe to assume that the first 
 
 ### 4 (Everybody) - Confirm Start Session info received - `y:<sessionname>:<playername>`
 
-After receiveing the list of players message, it is nice to send a confirmation to let the server know that we received the info, so it stops sending us the start session message. It is not only to save resources, but to prevent it to spam our ports.
+After receiving the list of players message, it is nice to send a confirmation to let the server know that we received the info, so it stops sending us the start session message. It is not only to save resources, but to prevent it to spam our ports.
 
 Example:
 `y:NiceRoom:SuperPlayer`
+
+After sending this message, the communications with this relay server should be finished. [Check out this section to see what's next.](https://gitlab.com/RabidTunes/rabid-hole-punch-server#what-to-do-after-receiving-the-players-ips-and-ports)
 
 ### Optional message in session (Host) - Kick player from session - `k:<sessionname>:<player-name-to-kick>`
 
@@ -140,14 +142,63 @@ Session timed out (sessions have a max time to live)
 ### ERR_PLAYER_TIMEOUT = "error:player_timeout"
 Player timed out (too much time without sending a ping)
 
-## What to do after receiveing the players ips and ports
+## What to do after receiving the players ips and ports
 
-Once you receive the IPs and ports of all players, the communication with the server should end. Now you have to start sending messages to the other peers. In this phase, the workflow is as follows:
+Once you receive the IPs and ports of all players, the communication with the server should end. Now you have to start sending messages to the other peers. Since you will be implementing your own communication between peers, the message you send is free format. As long as it is UDP, it should be ok. If you need an example of the messages sent, you can check the [Godot plugin](https://gitlab.com/RabidTunes/rabid-hole-punch-godot).
 
-### SENDING GREETINGS (WIP)
+In this phase, the workflow is as follows:
 
-### SENDING CONFIRMATIONS (WIP)
+### Sending greetings
 
-### STARTING SERVER AND CONNECTING (WIP)
+In this phase, each peer should start listening on the port that the server sent as the "own port" (Remember that the server sent a message like `s:<ownport>:<other_players_addresses...>`). Once they do this, each peer has the ip address and the port of the other peers, but because of how some NATs work, it could happen that the NAT opens a different port for security reasons, so we are not really 100% sure that the ports that the server sent us as the "others' peers" ports. Some routers change the ports opened and assign a new one that's slightly above or below the one opened for the communication with the server.
+
+For this reason, each peer should send multiple messages to other peers. For each peer it should be sent a message containing at least the port used to send that message to that specific peer. Since we do not know for sure the port, we should also have a **window of ports to test**. Something like port received +- 8.
+
+Example:
+Let's say SuperPlayer received that their port is 1234 and also received that CoolPlayer's port is 5555. SuperPlayer should listen to port 1234 and start sending UDP messages to CoolPlayer's IP. Regarding CoolPlayer's port, SuperPlayer should first start trying the port 5555, but they should also send some messages on near ports just to be sure that the greeting packet arrives. 
+
+So SuperPlayer will test sending that message to the ports 5547, 5548, 5549, 5550, 5551, 5552, 5553, 5554, 5556, 5557, 5558, 5559, 5560, 5561, 5562 and 5563. It is extremely important that on each message the port sent is the port used to send that message, so when CoolPlayer receives the message, they can know which port the other peer used to reach them.
+
+After receiving enough greetings, each peer can decide what is the port they should use for communications. If the server said that a peer's port is 1234 but all greetings were received on poert 1240, that port should be used instead, so you should close the previously opened port for listening and change the port.
+
+After this you can move on to the next phase.
+
+### Sending confirmations
+
+After finishing sending greetings, each peer can be sure about one thing: their own port. The previous phase goal was to confirm the port opened for each peer. But each peers still doesn't know what is the confirmed port of the other peers.
+
+That's why in this stage we will send each peer confirmed port to other peers, so the other peers know what is the confirmed port for each peer. So for example if SuperPlayer confirme that their port is 1234, they should send to the others that port number alongside their name.
+
+But here's the catch: we still don't know the confirmed port for the others, so we still do have to send the confirmations inside a window of ports to be sure that our message reaches the others.
+
+Example:
+Let's say SuperPlayer confirmed that their port is 1234. CoolPlayer however noticed that the server said that their port is 5555 but all the greetings were received on port 5560 instead. SuperPlayer will keep listening on port 1234 but CoolPlayer will switch to port 5560.
+
+After this, SuperPlayer will send messages to CoolPlayer with the port 1234 so CoolPlayer can confirm that SuperPlayer's port is 1234... but SuperPlayer messages will initially fail, because SuperPlayer first attempt will be at port 5555 and CoolPlayer knows that this port is no good! This is why SuperPlayer should try nearby ports so the message will reach CoolPlayer at some point.
+
+CoolPlayer however will send message to SuperPlayer with the confirmed port 5560, and this message will reach SuperPlayer with no issues with the first port attempted (1234) as this port hasn't changed.
+
+One thing SuperPlayer (and any player) should do to speed up the confirmation process is, when SuperPlayer receives CoolPlayer's confirmation message, is to stop testing nearby ports and just use the port that CoolPlayer has confirmed for them.
+
+Remember: **Greetings phase is about confirming each peer's _own port_. Confirmations phase is about confirming _other's port_.**
 
 
+### Starting server and communicating
+
+Once every peer has confirmed other's peer ports, the host can start the multiplayer server and the peers can connect to the host! It is recommended that the port used by clients for communication is the one confirmed in the previous stage. Some engines allow specifying which port will be used as the listening one when connecting to the server.
+
+## Problems when communicating with other peers
+
+Just like with the relay server it could happen that some problems arise when communicating with other peers, even with what we did to try to mitigate issues. A few common problems you can have are:
+
+### Some client peers are not reachable
+
+If a peer does not receive any greeting in the greetings phase, they can consider that they are unreachable and unfortunately, this holepunch system is not a good fit for them
+
+### Host is unreachable
+
+Imagine some peers receive greets from each other so they have enough greetings to confirm their own port, but when reaching the confirmations phase, the host never confirms its own port. This is a problem because you cannot have a multiplayer match without a host. A possible solution to this (which is not implemented right now in the Godot plugin by the way) is to change the player that will act as the host on the fly, although it can be difficult since every player should decide who will be the new host.
+
+# Credits
+
+WIP
