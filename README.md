@@ -40,7 +40,9 @@ This server will start listening in the UDP port of your choice and it will wait
 
 You can implement a client for this server in any game engine of your choice, [but you have one already available for the Godot game engine here](https://gitlab.com/RabidTunes/rabid-hole-punch-godot)
 
-**In case you want to implement your own client**, here is the workflow and the UDP packets you have to send to the server in order to the hole punch process to work:
+## Description of the workflow (in case you want to implement your own client for this server)
+
+Here is the workflow and the UDP packets you have to send to the server in order to the hole punch process to work:
 
 ### 1 (Host) - Create session request - `h:<sessionname>:<playername>:<maxplayers>:<sessionpassword>`
 
