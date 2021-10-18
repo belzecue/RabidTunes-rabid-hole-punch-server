@@ -2,6 +2,7 @@
 This class is the one handling the requests and rerouting them
 to the correspondent handler function
 """
+import re
 from random import choice
 from string import ascii_uppercase, ascii_lowercase, digits
 from typing import Tuple
@@ -12,8 +13,11 @@ from twisted.internet.protocol import DatagramProtocol
 from twisted.internet.task import deferLater
 
 import logger
-import re
 from errors import *
+# This import is used to dynamically load the request handlers
+# noinspection PyUnresolvedReferences
+from handlers import *
+from handlers.handler import Handler
 from model import Session, Player, InvalidRequest, IgnoredRequest
 
 UDP_MESSAGE_SECONDS_BETWEEN_TRIES: float = 0.05
@@ -49,6 +53,7 @@ class Server(DatagramProtocol):
                                  "y": self.confirm_player}
         reactor.callLater(SESSION_CLEANUP_SCHEDULED_SECONDS, self.cleanup_sessions)
         reactor.callLater(PLAYER_CLEANUP_SCHEDULED_SECONDS, self.cleanup_players)
+        print(Handler.__subclasses__())
 
     def datagramReceived(self, datagram, address):
         datagram_string = datagram.decode("utf-8")
