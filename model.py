@@ -7,6 +7,7 @@ from typing import List, Dict, Tuple
 
 PLAYER_TIMEOUT_MSECS = 5 * 1000
 SESSION_TIMEOUT_MSECS = 15 * 60 * 1000
+REALTIME_SESSION_TIMEOUT_MSECS = 80 * 1000
 
 
 def current_time_millis():
@@ -41,7 +42,7 @@ class Player:
 
 class Session:
 
-    def __init__(self, name: str, max_players: int, host: Player, password: str = None):
+    def __init__(self, name: str, max_players: int, host: Player, password: str = None, secret: str = None):
         self.name: str = name
         self.max_players: int = max_players
         self.host: Player = host
@@ -49,9 +50,13 @@ class Session:
         self.players_array: List = [host]
         self.password: str = password
         self.started_at: int = current_time_millis()
+        self.secret: str = secret
 
     def is_timed_out(self) -> bool:
-        return current_time_millis() - self.started_at > SESSION_TIMEOUT_MSECS
+        if self.is_realtime():
+            return current_time_millis() - self.host.last_seen > REALTIME_SESSION_TIMEOUT_MSECS
+        else:
+            return current_time_millis() - self.started_at > SESSION_TIMEOUT_MSECS
 
     def is_full(self) -> bool:
         return len(self.players_array) == self.max_players
@@ -86,6 +91,9 @@ class Session:
             self.host = self.players_array[0]
         else:
             self.host = None
+
+    def is_realtime(self) -> bool:
+        return self.secret is not None
 
     def __eq__(self, other):
         if other is None:

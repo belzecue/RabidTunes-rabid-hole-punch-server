@@ -2,6 +2,8 @@
 This class is the one handling the requests and rerouting them
 to the correspondent handler function
 """
+from random import choice
+from string import ascii_uppercase, ascii_lowercase, digits
 from typing import Tuple
 
 from twisted.internet import reactor
@@ -19,6 +21,10 @@ SESSION_CLEANUP_SCHEDULED_SECONDS: float = 60 * 5
 PLAYER_CLEANUP_SCHEDULED_SECONDS: float = 8
 CONFIRMATION_RETRIES: int = 8
 SECONDS_BETWEEN_CONFIRMATION_RETRIES: float = 0.1
+UUID_CHARACTERS: str = ascii_uppercase + ascii_lowercase + digits
+SECRET_LENGTH: int = 12
+SESSION_NAME_CHARACTERS: str = ascii_uppercase + digits
+SESSION_NAME_LENGTH: int = 5
 
 SESSION_NAME_REGEX = "[A-Za-z0-9]{1,10}"
 PLAYER_NAME_REGEX = "[A-Za-z0-9]{1,12}"
@@ -34,6 +40,7 @@ SESSION_HOST_REGEX = "^" + SESSION_NAME_REGEX + ":" + PLAYER_NAME_REGEX + ":" + 
 class Server(DatagramProtocol):
 
     def __init__(self):
+        self.sessions_by_address = {}
         self.active_sessions = {}
         self.starting_sessions = {}
         self.logger = logger.get_logger("Server")
@@ -144,13 +151,18 @@ class Server(DatagramProtocol):
         self.check_active_session(session_name, address)
         session = self.active_sessions[session_name]
         self.check_player_exists_in(session, player_name, address)
+        if session.is_realtime():
+            self.check_player_is_host(session, address)
 
         session.remove_player(player_name)
         self.send_message(address, ERR_SESSION_PLAYER_EXIT)
         self.logger.info("Player %s exited session %s", player_name, session_name)
-        if not session.players_array:
+        if not session.players_array or session.is_realtime():
             del self.active_sessions[session_name]
-            self.logger.info("No more players in session %s, deleted session", session_name)
+            if session.is_realtime():
+                self.logger.info("Realtime session %s closed", session_name)
+            else:
+                self.logger.info("No more players in session %s, deleted session", session_name)
 
     @inlineCallbacks
     def start_session(self, message: str, address: Tuple):
@@ -204,6 +216,59 @@ class Server(DatagramProtocol):
 
         session.remove_player(player_name)
         self.logger.info("Player %s from session %s received other players' addresses", player_name, session_name)
+
+    def realtime_host_session(self, message: str, address: Tuple):
+        player_name, max_players, password = self.parse_realtime_host_request(message, address)
+        ip, port = address
+        self.logger.debug("Received request from player %s to host a realtime session for max %s players. "
+                          "Source: %s:%s", player_name, max_players, ip, port)
+        session: Session = self.sessions_by_address.get(address)
+        if session:
+            if session.password_match(password):
+                self.send_message(address, f"ok:{session.name}:{session.secret}")
+                return
+            else:
+                self.logger.debug("Session password for session %s does not match", session.name)
+                self.send_message(address, ERR_SESSION_PASSWORD_MISMATCH)
+                raise InvalidRequest(f"Session password for session {session.name} does not match")
+
+        session_code: str = get_random_string_from(SESSION_NAME_CHARACTERS, SESSION_NAME_LENGTH)
+        session_secret: str = get_random_string_from(UUID_CHARACTERS, SECRET_LENGTH)
+        session = Session(session_code, max_players, Player(player_name, ip, port), password, session_secret)
+
+        self.active_sessions[session.name] = session
+        self.sessions_by_address[address] = session
+        self.logger.info("Created session %s (max %s players)", session.name, max_players)
+        self.send_message(address, f"ok:{session.name}:{session.secret}")
+
+    def realtime_ping(self, message: str, address: Tuple):
+        session_name: str = message
+        ip, port = address
+        # TODO Update last seen for this session
+        # TODO Send all players: Confirmed players only name, non-confirmed players send name/ip/port
+
+    def realtime_connect_session(self, message: str, address: Tuple):
+        session_name, player_name, session_password = self.parse_connect_request(message, address)
+        ip, port = address
+        self.logger.debug("Received request from player %s to connect to realtime session %s. Source: %s:%s",
+                          player_name, session_name, ip, port)
+        # TODO Check if player list is full
+        # TODO Check if player is in list, if is in list but no host port assigned, send wait, send host port otherwise
+        # TODO Add player to list of candidates
+        # TODO Send message to host informing about new player
+        # TODO Send message to client saying wait
+
+    def realtime_host_port_info(self, message: str, address: Tuple):
+        session_name, session_secret = self.parse_host_port_request(message, address)
+        ip, port = address
+        self.logger.debug("Received request from to add host port info for new player")
+        # TODO Pair new host port to latest player candidate
+        # TODO Send ok to host so the host can start paying attention to new player and sending greetings
+
+    def realtime_player_confirmed_by_host(self, message: str, address: Tuple):
+        pass
+        # TODO Move player from candidate list to confirmed player list, start sending this player in the pings
+        # TODO Leave place for a new candidate if there's room for it
 
     """
     Message sending helper methods
@@ -375,3 +440,7 @@ class Server(DatagramProtocol):
 # Helper method to pause execution for n seconds
 def sleep(seconds):
     return deferLater(reactor, seconds, lambda: None)
+
+
+def get_random_string_from(charset: str, length: int) -> str:
+    return ''.join(choice(charset) for _ in range(length))
