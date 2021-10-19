@@ -1,10 +1,13 @@
 """
 Main file of the UDP Hole Puncher Server
 You can activate debug mode by calling the main method with 'DEBUG' as the second parameter
+This class is just a caller for the main server loop, which is the Server file
 """
 import sys
 import logging
-import logger
+
+from session_manager import SessionManager
+from utils import logger
 from twisted.internet import reactor
 from server import Server
 
@@ -23,3 +26,6 @@ if __name__ == '__main__':
     reactor.listenUDP(port, Server())
     logger.get_logger("Main").info('Listening on *:%d' % port)
     reactor.run()
+
+    SessionManager().get_sessions()["caca"] = 2
+    print(SessionManager().get_sessions())

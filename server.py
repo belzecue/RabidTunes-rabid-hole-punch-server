@@ -1,6 +1,6 @@
 """
-This class is the one handling the requests and rerouting them
-to the correspondent handler function
+Server is the class that routes the requests
+to the appropiate handler
 """
 import re
 from random import choice
@@ -12,13 +12,16 @@ from twisted.internet.defer import inlineCallbacks
 from twisted.internet.protocol import DatagramProtocol
 from twisted.internet.task import deferLater
 
-import logger
+from utils import logger
 from errors import *
-# This import is used to dynamically load the request handlers
+
+from handlers.request_handler import RequestHandler
+from model import Session, Player, InvalidRequest, IgnoredRequest
+# This "from handlers import *" is used to dynamically load the request handlers
+# Do not remove the noinspection statement otherwise you might delete it when optimizing imports
 # noinspection PyUnresolvedReferences
 from handlers import *
-from handlers.handler import Handler
-from model import Session, Player, InvalidRequest, IgnoredRequest
+
 
 UDP_MESSAGE_SECONDS_BETWEEN_TRIES: float = 0.05
 SESSION_CLEANUP_SCHEDULED_SECONDS: float = 60 * 5
@@ -51,9 +54,13 @@ class Server(DatagramProtocol):
         self.message_handlers = {"h": self.host_session, "c": self.connect_session, "p": self.player_ping,
                                  "k": self.kick_player, "x": self.exit_session, "s": self.start_session,
                                  "y": self.confirm_player}
+        self.handlers = {}
+        for handler_class in RequestHandler.__subclasses__():
+            handler = handler_class()
+            self.handlers[handler.get_message_prefix()] = handler
+            self.logger.debug("%s request handler is ready", handler.__class__.__name__)
         reactor.callLater(SESSION_CLEANUP_SCHEDULED_SECONDS, self.cleanup_sessions)
         reactor.callLater(PLAYER_CLEANUP_SCHEDULED_SECONDS, self.cleanup_players)
-        print(Handler.__subclasses__())
 
     def datagramReceived(self, datagram, address):
         datagram_string = datagram.decode("utf-8")
@@ -82,6 +89,7 @@ class Server(DatagramProtocol):
     """
     Commands handling methods
     """
+
     def host_session(self, message: str, address: Tuple):
         session_name, player_name, max_players, password = self.parse_host_request(message, address)
         ip, port = address
@@ -278,6 +286,7 @@ class Server(DatagramProtocol):
     """
     Message sending helper methods
     """
+
     def broadcast_session_info(self, session: Session):
         for player in session.players_array:
             self.send_session_info((player.ip, player.port), session)
@@ -303,6 +312,7 @@ class Server(DatagramProtocol):
     """
     Parse messages helper methods 
     """
+
     def parse_session_player_from(self, message: str, source_address: Tuple) -> Tuple:
         if not re.search(SESSION_PLAYER_REGEX, message):
             self.send_message(source_address, ERR_REQUEST_INVALID)
@@ -341,6 +351,7 @@ class Server(DatagramProtocol):
     """
     Checker methods
     """
+
     def check_host_session(self, session_name: str, address: Tuple):
         ip, port = address
         if session_name in self.starting_sessions:
@@ -411,6 +422,7 @@ class Server(DatagramProtocol):
     """
     Async background tasks
     """
+
     def cleanup_sessions(self):
         if self.active_sessions:
             self.logger.debug("Starting session cleanup")
