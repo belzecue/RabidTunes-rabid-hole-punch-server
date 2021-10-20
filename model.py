@@ -28,6 +28,9 @@ class Player:
     def update_last_seen(self):
         self.last_seen = current_time_millis()
 
+    def get_address(self) -> Tuple[str, int]:
+        return self.ip, self.port
+
     def __eq__(self, other):
         if other is None:
             return False
@@ -51,6 +54,20 @@ class Session:
         self.password: str = password
         self.started_at: int = current_time_millis()
         self.secret: str = secret
+        self.started: bool = False
+        self.realtime: bool = False
+
+    def get_player(self, player_name: str) -> Player:
+        player: Player = self.players.get(player_name)
+        if not player:
+            raise NonExistentPlayer
+        return player
+
+    def has_player(self, player_name: str) -> bool:
+        return player_name in self.players.keys()
+
+    def update_player_last_seen(self, player_name: str):
+        self.get_player(player_name).update_last_seen()
 
     def is_timed_out(self) -> bool:
         if self.is_realtime():
@@ -66,6 +83,9 @@ class Session:
             self.players_array.append(player)
             self.players[player.name] = player
 
+    def get_player_names(self) -> List[str]:
+        return [player.name for player in self.players_array]
+
     def get_session_players_names(self) -> str:
         return ":".join([player.name for player in self.players_array])
 
@@ -73,7 +93,7 @@ class Session:
         return ";".join([f"{player.name}:{player.ip}:{player.port}" for player in self.players_array
                          if player.name != current_player.name])
 
-    def password_match(self, input_password: str) -> bool:
+    def password_matches(self, input_password: str) -> bool:
         if self.password is None:
             return True
         if input_password is None:
@@ -95,10 +115,16 @@ class Session:
     def is_realtime(self) -> bool:
         return self.secret is not None
 
+    def has_started(self) -> bool:
+        return self.started
+
+    def has_players(self) -> bool:
+        return len(self.players_array) > 0
+
     def __eq__(self, other):
         if other is None:
             return False
-        return self.name == other.uuid
+        return self.name == other.name
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -112,4 +138,12 @@ class InvalidRequest(Exception):
 
 
 class IgnoredRequest(Exception):
+    pass
+
+
+class SessionException(Exception):
+    pass
+
+
+class NonExistentPlayer(SessionException):
     pass

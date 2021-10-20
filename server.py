@@ -56,7 +56,7 @@ class Server(DatagramProtocol):
                                  "y": self.confirm_player}
         self.handlers = {}
         for handler_class in RequestHandler.__subclasses__():
-            handler = handler_class()
+            handler = handler_class(self.transport)
             self.handlers[handler.get_message_prefix()] = handler
             self.logger.debug("%s request handler is ready", handler.__class__.__name__)
         reactor.callLater(SESSION_CLEANUP_SCHEDULED_SECONDS, self.cleanup_sessions)
@@ -237,7 +237,7 @@ class Server(DatagramProtocol):
                           "Source: %s:%s", player_name, max_players, ip, port)
         session: Session = self.sessions_by_address.get(address)
         if session:
-            if session.password_match(password):
+            if session.password_matches(password):
                 self.send_message(address, f"ok:{session.name}:{session.secret}")
                 return
             else:
@@ -374,7 +374,7 @@ class Server(DatagramProtocol):
         ip, port = address
         self.check_active_session(session_name, address)
         session = self.active_sessions[session_name]
-        if not session.password_match(session_password):
+        if not session.password_matches(session_password):
             self.logger.debug("Session password for session %s does not match", session_name)
             self.send_message(address, ERR_SESSION_PASSWORD_MISMATCH)
             raise InvalidRequest(f"Session password for session {session_name} does not match")
