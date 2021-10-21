@@ -1,4 +1,4 @@
-from typing import Tuple, Dict
+from typing import Tuple, Dict, List
 
 from model import Session, Player
 from utils import logger
@@ -39,23 +39,14 @@ class SessionManager(metaclass=Singleton):
             raise NonExistentSession
         return session
 
+    def get_all_sessions(self) -> List[Session]:
+        return list(self._active_sessions.values())
+
     def has_session(self, session_name: str) -> bool:
         return bool(self._active_sessions[session_name])
 
-    def add(self, session: Session):
-        if self.exists(session.name) or self.is_session_already_created_for(session.host.get_address()):
-            raise Exception  # TODO
-        self._active_sessions[session.name] = session
-        self._sessions_by_address[session.host.get_address()] = session
-
     def exists(self, session_name: str) -> bool:
         return bool(self._active_sessions.get(session_name))
-
-    def is_host_for(self, address: Tuple[str, int], session_name: str) -> bool:
-        session_obj: Session = self._active_sessions.get(session_name)
-        if not session_obj:
-            raise Exception  # TODO
-        return (session_obj.host.ip, session_obj.host.port) == address
 
     def is_session_already_created_for(self, address: Tuple[str, int]) -> bool:
         return bool(self._sessions_by_address.get(address))
@@ -63,9 +54,10 @@ class SessionManager(metaclass=Singleton):
     def delete(self, session_name: str):
         if self.has_session(session_name):
             session_to_delete: Session = self._active_sessions[session_name]
-            for address, session in self._sessions_by_address.items():
+            for address, session in [key_value for key_value in self._sessions_by_address.items()]:
                 if session_to_delete == session:
                     del self._sessions_by_address[address]
+                    break
             del self._active_sessions[session_name]
         else:
             self._logger.debug("Session %s is already deleted")
@@ -73,6 +65,10 @@ class SessionManager(metaclass=Singleton):
 
 
 class SessionManagerException(Exception):
+    pass
+
+
+class DuplicatedSession(SessionManagerException):
     pass
 
 

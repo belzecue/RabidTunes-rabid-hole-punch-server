@@ -2,238 +2,132 @@
 Server is the class that routes the requests
 to the appropiate handler
 """
-import re
-from random import choice
-from string import ascii_uppercase, ascii_lowercase, digits
-from typing import Tuple
+from inspect import isabstract
+from typing import Tuple, List
 
 from twisted.internet import reactor
 from twisted.internet.defer import inlineCallbacks
 from twisted.internet.protocol import DatagramProtocol
-from twisted.internet.task import deferLater
 
+from session_manager import SessionManager
 from utils import logger
 from errors import *
 
 from handlers.request_handler import RequestHandler
-from model import Session, Player, InvalidRequest, IgnoredRequest
+from model import Session, InvalidRequest, IgnoredRequest
 # This "from handlers import *" is used to dynamically load the request handlers
-# Do not remove the noinspection statement otherwise you might delete it when optimizing imports
+# Do not remove the 'noinspection' statement otherwise you might delete it when optimizing imports
 # noinspection PyUnresolvedReferences
 from handlers import *
+from utils.reflection import get_all_subclasses
+from utils.thread import sleep
+
+_SCHEDULED_SESSION_CLEANUP_SECONDS: float = 60 * 5
+_SCHEDULED_PLAYER_CLEANUP_SECONDS: float = 8
 
 
-UDP_MESSAGE_SECONDS_BETWEEN_TRIES: float = 0.05
-SESSION_CLEANUP_SCHEDULED_SECONDS: float = 60 * 5
-PLAYER_CLEANUP_SCHEDULED_SECONDS: float = 8
-CONFIRMATION_RETRIES: int = 8
-SECONDS_BETWEEN_CONFIRMATION_RETRIES: float = 0.1
-UUID_CHARACTERS: str = ascii_uppercase + ascii_lowercase + digits
-SECRET_LENGTH: int = 12
-SESSION_NAME_CHARACTERS: str = ascii_uppercase + digits
-SESSION_NAME_LENGTH: int = 5
-
-SESSION_NAME_REGEX = "[A-Za-z0-9]{1,10}"
-PLAYER_NAME_REGEX = "[A-Za-z0-9]{1,12}"
-MAX_PLAYERS_REGEX = "([2-9]|1[0-2])"
-SESSION_PASS_REGEX = "[A-Za-z0-9]{1,12}"
-
-SESSION_PLAYER_REGEX = "^" + SESSION_NAME_REGEX + ":" + PLAYER_NAME_REGEX + "$"
-SESSION_PLAYER_PASS_REGEX = "^" + SESSION_NAME_REGEX + ":" + PLAYER_NAME_REGEX + "(:" + SESSION_PASS_REGEX + ")?$"
-SESSION_HOST_REGEX = "^" + SESSION_NAME_REGEX + ":" + PLAYER_NAME_REGEX + ":" + MAX_PLAYERS_REGEX \
-                     + "(:" + SESSION_PASS_REGEX + ")?$"
+_MAX_RETRIES: int = 20
+_SECONDS_TO_RETRY: float = 0.1
 
 
 class Server(DatagramProtocol):
 
     def __init__(self):
-        self.sessions_by_address = {}
-        self.active_sessions = {}
-        self.starting_sessions = {}
-        self.logger = logger.get_logger("Server")
-        self.message_handlers = {"h": self.host_session, "c": self.connect_session, "p": self.player_ping,
-                                 "k": self.kick_player, "x": self.exit_session, "s": self.start_session,
-                                 "y": self.confirm_player}
-        self.handlers = {}
-        for handler_class in RequestHandler.__subclasses__():
-            handler = handler_class(self.transport)
-            self.handlers[handler.get_message_prefix()] = handler
-            self.logger.debug("%s request handler is ready", handler.__class__.__name__)
-        reactor.callLater(SESSION_CLEANUP_SCHEDULED_SECONDS, self.cleanup_sessions)
-        reactor.callLater(PLAYER_CLEANUP_SCHEDULED_SECONDS, self.cleanup_players)
+        self._logger = logger.get_logger("Server")
+        self._handlers = {}
+        self._session_manager = SessionManager()
+        self._initialize_request_handlers()
+        reactor.callLater(_SCHEDULED_SESSION_CLEANUP_SECONDS, self._cleanup_sessions)
+        reactor.callLater(_SCHEDULED_PLAYER_CLEANUP_SECONDS, self._cleanup_players)
 
     def datagramReceived(self, datagram, address):
         datagram_string = datagram.decode("utf-8")
-        self.logger.debug("Received datagram %s", datagram_string)
+        self._logger.debug(f"Received datagram {datagram_string}")
 
         try:
-            message_type, message = self.parse_datagram_string(datagram_string, address)
-            if message_type not in self.message_handlers.keys():
+            message_type, message = self._parse_datagram_string(datagram_string, address)
+            if message_type not in self._handlers.keys():
                 raise InvalidRequest
-            self.message_handlers[message_type](message, address)
+            self._handlers[message_type].handle_message(message, address)
         except IgnoredRequest:
             pass
         except InvalidRequest as e:
-            self.logger.debug("Invalid request: %s", str(e))
+            self._logger.debug(f"Invalid request: {str(e)}")
         except Exception as e:
-            self.logger.error("Uncontrolled error: %s", str(e))
+            self._logger.error(f"Uncontrolled error: {str(e)}")
 
-    def parse_datagram_string(self, data_string: str, address: Tuple) -> Tuple:
+    def _parse_datagram_string(self, data_string: str, address: Tuple) -> Tuple:
         split = data_string.split(":", 1)
         if len(split) != 2:
-            self.logger.debug("Invalid datagram received %s", data_string)
-            self.send_message(address, ERR_REQUEST_INVALID)
+            self._logger.debug(f"Invalid datagram received {data_string}")
+            self._send_message(address, ERR_REQUEST_INVALID)
             raise InvalidRequest(f"Invalid datagram received {data_string}")
         return split[0], split[1]
 
-    """
-    Commands handling methods
-    """
-
-    def host_session(self, message: str, address: Tuple):
-        session_name, player_name, max_players, password = self.parse_host_request(message, address)
-        ip, port = address
-        self.logger.debug("Received request from player %s to host session %s for max %s players. Source: %s:%s",
-                          player_name, session_name, max_players, ip, port)
-
-        self.check_host_session(session_name, address)
-
-        self.active_sessions[session_name] = Session(session_name, max_players, Player(player_name, ip, port), password)
-        self.logger.info("Created session %s (max %s players)", session_name, max_players)
-        self.send_session_info(address, self.active_sessions[session_name])
-
-    def connect_session(self, message: str, address: Tuple):
-        session_name, player_name, session_password = self.parse_connect_request(message, address)
-        ip, port = address
-        self.logger.debug("Received request from player %s to connect to session %s. Source: %s:%s",
-                          player_name, session_name, ip, port)
-
-        self.check_connect_session(session_name, session_password, player_name, address)
-
-        session = self.active_sessions[session_name]
-        session.add_player(Player(player_name, ip, port))
-        self.logger.info("Connected player %s to session %s", player_name, session_name)
-        self.broadcast_session_info(session)
-
-    def player_ping(self, message: str, address: Tuple):
-        session_name, player_name = self.parse_session_player_from(message, address)
-        ip, port = address
-        self.logger.debug("Received ping from player %s from session %s. Source: %s:%s",
-                          player_name, session_name, ip, port)
-
-        if session_name in self.starting_sessions.keys() \
-                and player_name in self.starting_sessions[session_name].players.keys():
-            self.logger.debug("Session %s is starting, sending addresses", session_name)
-            session = self.starting_sessions[session_name]
-            player = session.players[player_name]
-            self.send_message(address, f"s:{player.port}:{session.get_session_players_addresses_except(player)}")
-            return
-        self.check_active_session(session_name, address)
-        session = self.active_sessions[session_name]
-        self.check_player_exists_in(session, player_name, address)
-
-        session.players[player_name].update_last_seen()
-        self.send_session_info(address, session)
-
-    def kick_player(self, message: str, address: Tuple):
-        session_name, player_name = self.parse_session_player_from(message, address)
-        ip, port = address
-        self.logger.debug("Received command to kick player %s from session %s. Source: %s:%s",
-                          player_name, session_name, ip, port)
-
-        self.check_active_session(session_name, address)
-        session = self.active_sessions[session_name]
-        self.check_player_exists_in(session, player_name, address)
-        self.check_player_is_host(session, address)
-
-        player = session.players[player_name]
-        session.remove_player(player_name)
-        self.send_message((player.ip, player.port), ERR_SESSION_PLAYER_KICKED_BY_HOST)
-        self.logger.info("Kicked player %s from session %s", player_name, session_name)
-        if not session.players_array:
-            del self.active_sessions[session_name]
-            self.logger.info("No more players in session %s, deleted session", session_name)
-        self.broadcast_session_info(session)
-
-    def exit_session(self, message: str, address: Tuple):
-        session_name, player_name = self.parse_session_player_from(message, address)
-        ip, port = address
-        self.logger.debug("Received command to exit session %s from player %s. Source: %s:%s",
-                          session_name, player_name, ip, port)
-
-        self.check_active_session(session_name, address)
-        session = self.active_sessions[session_name]
-        self.check_player_exists_in(session, player_name, address)
-        if session.is_realtime():
-            self.check_player_is_host(session, address)
-
-        session.remove_player(player_name)
-        self.send_message(address, ERR_SESSION_PLAYER_EXIT)
-        self.logger.info("Player %s exited session %s", player_name, session_name)
-        if not session.players_array or session.is_realtime():
-            del self.active_sessions[session_name]
-            if session.is_realtime():
-                self.logger.info("Realtime session %s closed", session_name)
-            else:
-                self.logger.info("No more players in session %s, deleted session", session_name)
-
     @inlineCallbacks
-    def start_session(self, message: str, address: Tuple):
+    def _send_message(self, address: Tuple[str, int], message: str, retries: int = 1):
         # TryExcept is required because @inlineCallbacks wraps this piece of code so
         # external TryExcept won't catch exceptions thrown here
         try:
-            session_name, source_player_name = self.parse_session_player_from(message, address)
-            ip, port = address
-            self.logger.debug("Received start session %s from player %s Source: %s:%s",
-                              session_name, source_player_name, ip, port)
-
-            if session_name in self.starting_sessions.keys():
-                self.logger.debug("Session %s already started", session_name)
+            if retries <= 1:
+                self.transport.write(bytes(message, "utf-8"), address)
                 return
-            self.check_active_session(session_name, address)
-            session = self.active_sessions[session_name]
-            self.check_player_is_host(session, address)
-            if len(session.players_array) == 1:
-                self.logger.debug("Cannot start session %s with only one player", session_name)
-                self.send_message(address, ERR_SESSION_SINGLE_PLAYER)
-                raise InvalidRequest(f"Cannot start session {session_name} with only one player")
 
-            del self.active_sessions[session_name]
-            self.starting_sessions[session_name] = session
-            for i in range(CONFIRMATION_RETRIES):
-                if session.players_array:
-                    for player_name in list(session.players.keys()):
-                        if player_name in session.players.keys():
-                            player = session.players[player_name]
-                            self.send_message((player.ip, player.port),
-                                              f"s:{player.port}:{session.get_session_players_addresses_except(player)}")
-                    yield sleep(SECONDS_BETWEEN_CONFIRMATION_RETRIES)
-            del self.starting_sessions[session_name]
-            self.logger.info("All addresses sent for session %s. Session closed.", session_name)
-        except IgnoredRequest:
-            pass
-        except InvalidRequest as e:
-            self.logger.debug("Invalid request: %s", str(e))
+            for i in range(min(retries, _MAX_RETRIES)):
+                self.transport.write(bytes(message, "utf-8"), address)
+                yield sleep(_SECONDS_TO_RETRY)
         except Exception as e:
-            self.logger.error("Uncontrolled error: %s", str(e))
+            self._logger.error(f"Uncontrolled error: {str(e)}")
 
-    def confirm_player(self, message: str, address: Tuple):
-        session_name, player_name = self.parse_session_player_from(message, address)
-        ip, port = address
-        self.logger.debug("Received confirmation about addresses reception for session %s from player %s Source: %s:%s",
-                          session_name, player_name, ip, port)
+    def _initialize_request_handlers(self):
+        all_handlers: set = get_all_subclasses(RequestHandler)
+        for handler_class in all_handlers:
+            if isabstract(handler_class):
+                continue
+            handler = handler_class(self._send_message)
+            if handler.get_message_prefix() in self._handlers.keys():
+                raise Exception(f"Duplicated handler for {handler.get_message_prefix()}")
+            self._handlers[handler.get_message_prefix()] = handler
+            self._logger.debug(f"{handler.__class__.__name__} loaded")
 
-        self.check_starting_session(session_name, address)
-        session = self.starting_sessions[session_name]
-        self.check_player_exists_in(session, player_name, address)
+    """
+    Async background tasks
+    """
+    def _cleanup_sessions(self):
+        all_sessions: List[Session] = list(self._session_manager.get_all_sessions())
+        if all_sessions:
+            self._logger.debug("Starting session cleanup")
 
-        session.remove_player(player_name)
-        self.logger.info("Player %s from session %s received other players' addresses", player_name, session_name)
+        for session in all_sessions:
+            if session.is_timed_out():
+                self._session_manager.delete(session.name)
+                for player in session.get_players():
+                    self._send_message(player.get_address(), ERR_SESSION_TIMEOUT, 3)
+                self._logger.info(f"Session {session.name} deleted because it timed out")
+        reactor.callLater(_SCHEDULED_SESSION_CLEANUP_SECONDS, self._cleanup_sessions)
 
+    def _cleanup_players(self):
+        all_sessions: List[Session] = list(self._session_manager.get_all_sessions())
+        if all_sessions:
+            self._logger.debug("Starting player cleanup")
+
+        for session in all_sessions:
+            to_kick = [player for player in session.get_players() if player.is_timed_out()]
+            for player in to_kick:
+                session.remove_player(player.name)
+                self._send_message(player.get_address(), ERR_PLAYER_TIMEOUT, 3)
+                self._logger.info(f"Kicked player {player.name} from session {session.name} because it timed out")
+            if not session.has_players():
+                self._session_manager.delete(session.name)
+                self._logger.info(f"No more players in session {session.name}, deleted session")
+                continue
+        reactor.callLater(_SCHEDULED_PLAYER_CLEANUP_SECONDS, self._cleanup_players)
+
+    """
     def realtime_host_session(self, message: str, address: Tuple):
         player_name, max_players, password = self.parse_realtime_host_request(message, address)
         ip, port = address
-        self.logger.debug("Received request from player %s to host a realtime session for max %s players. "
+        self._logger.debug("Received request from player %s to host a realtime session for max %s players. "
                           "Source: %s:%s", player_name, max_players, ip, port)
         session: Session = self.sessions_by_address.get(address)
         if session:
@@ -241,7 +135,7 @@ class Server(DatagramProtocol):
                 self.send_message(address, f"ok:{session.name}:{session.secret}")
                 return
             else:
-                self.logger.debug("Session password for session %s does not match", session.name)
+                self._logger.debug("Session password for session %s does not match", session.name)
                 self.send_message(address, ERR_SESSION_PASSWORD_MISMATCH)
                 raise InvalidRequest(f"Session password for session {session.name} does not match")
 
@@ -251,7 +145,7 @@ class Server(DatagramProtocol):
 
         self.active_sessions[session.name] = session
         self.sessions_by_address[address] = session
-        self.logger.info("Created session %s (max %s players)", session.name, max_players)
+        self._logger.info("Created session %s (max %s players)", session.name, max_players)
         self.send_message(address, f"ok:{session.name}:{session.secret}")
 
     def realtime_ping(self, message: str, address: Tuple):
@@ -263,8 +157,8 @@ class Server(DatagramProtocol):
     def realtime_connect_session(self, message: str, address: Tuple):
         session_name, player_name, session_password = self.parse_connect_request(message, address)
         ip, port = address
-        self.logger.debug("Received request from player %s to connect to realtime session %s. Source: %s:%s",
-                          player_name, session_name, ip, port)
+        self._logger.debug("Received request from player %s to connect to realtime session %s. Source: %s:%s",
+                           player_name, session_name, ip, port)
         # TODO Check if player list is full
         # TODO Check if player is in list, if is in list but no host port assigned, send wait, send host port otherwise
         # TODO Add player to list of candidates
@@ -274,7 +168,7 @@ class Server(DatagramProtocol):
     def realtime_host_port_info(self, message: str, address: Tuple):
         session_name, session_secret = self.parse_host_port_request(message, address)
         ip, port = address
-        self.logger.debug("Received request from to add host port info for new player")
+        self._logger.debug("Received request from to add host port info for new player")
         # TODO Pair new host port to latest player candidate
         # TODO Send ok to host so the host can start paying attention to new player and sending greetings
 
@@ -282,182 +176,5 @@ class Server(DatagramProtocol):
         pass
         # TODO Move player from candidate list to confirmed player list, start sending this player in the pings
         # TODO Leave place for a new candidate if there's room for it
-
-    """
-    Message sending helper methods
     """
 
-    def broadcast_session_info(self, session: Session):
-        for player in session.players_array:
-            self.send_session_info((player.ip, player.port), session)
-
-    def send_session_info(self, address: Tuple, session: Session):
-        self.send_message(address, f"i:{session.get_session_players_names()}")
-
-    @inlineCallbacks
-    def send_message(self, address: Tuple, message: str, retries: int = 1):
-        # TryExcept is required because @inlineCallbacks wraps this piece of code so
-        # external TryExcept won't catch exceptions thrown here
-        try:
-            if retries <= 1:
-                self.transport.write(bytes(message, "utf-8"), address)
-                return
-
-            for i in range(retries):
-                self.transport.write(bytes(message, "utf-8"), address)
-                yield sleep(UDP_MESSAGE_SECONDS_BETWEEN_TRIES)
-        except Exception as e:
-            self.logger.error("Uncontrolled error: %s", str(e))
-
-    """
-    Parse messages helper methods 
-    """
-
-    def parse_session_player_from(self, message: str, source_address: Tuple) -> Tuple:
-        if not re.search(SESSION_PLAYER_REGEX, message):
-            self.send_message(source_address, ERR_REQUEST_INVALID)
-            self.logger.debug("Invalid session/player message received %s", message)
-            raise InvalidRequest(f"Invalid session/player message received {message}")
-        split = message.split(":")
-        # Session, Player
-        return split[0], split[1]
-
-    def parse_host_request(self, host_request: str, source_address: Tuple) -> Tuple:
-        if not re.search(SESSION_HOST_REGEX, host_request):
-            self.send_message(source_address, ERR_REQUEST_INVALID)
-            self.logger.debug("Invalid session/player message received %s", host_request)
-            raise InvalidRequest(f"Invalid session/player message received {host_request}")
-        split = host_request.split(":")
-        if len(split) == 3:
-            # Session, Player, MaxPlayers
-            return split[0], split[1], int(split[2]), None
-        else:
-            # Session, Player, MaxPlayers, Password
-            return split[0], split[1], int(split[2]), split[3]
-
-    def parse_connect_request(self, connect_request: str, source_address: Tuple) -> Tuple:
-        if not re.search(SESSION_PLAYER_PASS_REGEX, connect_request):
-            self.send_message(source_address, ERR_REQUEST_INVALID)
-            self.logger.debug("Invalid session/player message received %s", connect_request)
-            raise InvalidRequest(f"Invalid session/player message received {connect_request}")
-        split = connect_request.split(":")
-        if len(split) == 2:
-            # Session, Player
-            return split[0], split[1], None
-        else:
-            # Session, Player, Password
-            return split[0], split[1], split[2]
-
-    """
-    Checker methods
-    """
-
-    def check_host_session(self, session_name: str, address: Tuple):
-        ip, port = address
-        if session_name in self.starting_sessions:
-            self.logger.debug("Session %s is already created and started", session_name)
-            self.send_message(address, ERR_SESSION_EXISTS)
-            raise InvalidRequest(f"Session {session_name} already exists but is started")
-
-        if session_name in self.active_sessions:
-            self.logger.debug("Session %s is already created", session_name)
-            session = self.active_sessions[session_name]
-            if session.host.ip == ip and session.host.port == port:
-                self.send_session_info(address, session)
-                raise IgnoredRequest
-            else:
-                self.logger.debug("A different player is trying to create the same session")
-                self.send_message(address, ERR_SESSION_EXISTS)
-                raise InvalidRequest(f"A different player is trying to create the same session {session_name}")
-
-    def check_connect_session(self, session_name: str, session_password: str, player_name: str, address: Tuple):
-        ip, port = address
-        self.check_active_session(session_name, address)
-        session = self.active_sessions[session_name]
-        if not session.password_matches(session_password):
-            self.logger.debug("Session password for session %s does not match", session_name)
-            self.send_message(address, ERR_SESSION_PASSWORD_MISMATCH)
-            raise InvalidRequest(f"Session password for session {session_name} does not match")
-        if session.is_full():
-            self.logger.debug("Session %s is full", session_name)
-            self.send_message(address, ERR_SESSION_FULL)
-            raise InvalidRequest(f"Session {session_name} is full")
-        if player_name in session.players.keys():
-            if ip == session.players[player_name].ip and port == session.players[player_name].port:
-                self.logger.debug("Player %s is already into session %s", player_name, session_name)
-                self.send_session_info(address, session)
-                raise IgnoredRequest
-            else:
-                self.logger.debug("Session %s already has a player with the exact same name (%s) coming from "
-                                  "a different ip and port", session_name, player_name)
-                self.send_message(address, ERR_SESSION_PLAYER_NAME_IN_USE)
-                raise InvalidRequest(f"Session {session_name} already has a player with the exact same ID "
-                                     f"({player_name}) coming from a different ip and port")
-
-    def check_active_session(self, session_name: str, address: Tuple):
-        if session_name not in self.active_sessions.keys():
-            self.logger.debug("Session %s doesn't exist", session_name)
-            self.send_message(address, ERR_SESSION_NON_EXISTENT)
-            raise InvalidRequest(f"Session {session_name} doesn't exist")
-
-    def check_starting_session(self, session_name: str, address: Tuple):
-        if session_name not in self.starting_sessions.keys():
-            self.logger.debug("Session %s is not starting", session_name)
-            self.send_message(address, ERR_SESSION_NOT_STARTED)
-            raise InvalidRequest(f"Session {session_name} is not starting")
-
-    def check_player_exists_in(self, session: Session, player_name: str, address: Tuple):
-        if player_name not in session.players:
-            self.logger.debug("Player %s doesn't exist in the given session %s", player_name, session.name)
-            self.send_message(address, ERR_SESSION_PLAYER_NON_EXISTENT)
-            raise InvalidRequest(f"Player {player_name} doesn't exist in the given session {session.name}")
-
-    def check_player_is_host(self, session: Session, address: Tuple):
-        if not session.is_host(address):
-            ip, port = address
-            self.logger.debug("Player %s:%s is not host, cannot perform request", ip, port)
-            self.send_message(address, ERR_SESSION_PLAYER_NON_HOST)
-            raise InvalidRequest(f"Player {ip}:{port} is not host, cannot perform request")
-
-    """
-    Async background tasks
-    """
-
-    def cleanup_sessions(self):
-        if self.active_sessions:
-            self.logger.debug("Starting session cleanup")
-        for session_name in list(self.active_sessions.keys()):
-            session = self.active_sessions[session_name]
-            if session.is_timed_out():
-                del self.active_sessions[session_name]
-                for player in session.players_array:
-                    self.send_message((player.ip, player.port), ERR_SESSION_TIMEOUT, 3)
-                self.logger.info("Session %s deleted because it timed out", session.name)
-        reactor.callLater(SESSION_CLEANUP_SCHEDULED_SECONDS, self.cleanup_sessions)
-
-    def cleanup_players(self):
-        if self.active_sessions:
-            self.logger.debug("Starting player cleanup")
-        for session_name in list(self.active_sessions.keys()):
-            session = self.active_sessions[session_name]
-            to_kick = [player for player in session.players_array if player.is_timed_out()]
-            for player in to_kick:
-                session.remove_player(player.name)
-                self.send_message((player.ip, player.port), ERR_PLAYER_TIMEOUT, 3)
-                self.logger.info("Kicked player %s from session %s because it timed out", player.name, session.name)
-            if not session.players_array:
-                del self.active_sessions[session_name]
-                self.logger.info("No more players in session %s, deleted session", session_name)
-                continue
-            if to_kick:
-                self.broadcast_session_info(session)
-        reactor.callLater(PLAYER_CLEANUP_SCHEDULED_SECONDS, self.cleanup_players)
-
-
-# Helper method to pause execution for n seconds
-def sleep(seconds):
-    return deferLater(reactor, seconds, lambda: None)
-
-
-def get_random_string_from(charset: str, length: int) -> str:
-    return ''.join(choice(charset) for _ in range(length))

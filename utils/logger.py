@@ -2,7 +2,7 @@
 Logger utilities
 This file provides some helping config to have a nice logging
 mechanism that is easy to use in other parts of the code
-By default logs printed with this logger will be output to console
+By default logs printed with this _logger will be output to console
 and a rotating log file
 """
 
