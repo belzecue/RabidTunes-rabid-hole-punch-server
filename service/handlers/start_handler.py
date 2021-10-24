@@ -2,11 +2,13 @@ from typing import Tuple, List
 
 from twisted.internet.defer import inlineCallbacks
 
-from errors import ERR_SESSION_PLAYER_NON_HOST, ERR_SESSION_SINGLE_PLAYER, ERR_SESSION_NON_EXISTENT, \
-    ERR_SESSION_PLAYER_NON_EXISTENT
-from handlers.session_player_handler import SessionPlayerHandler
+from constants.errors import ERR_SESSION_PLAYER_NON_HOST, ERR_SESSION_SINGLE_PLAYER, ERR_SESSION_NON_EXISTENT, \
+    ERR_SESSION_PLAYER_NON_EXISTENT, ERR_INVALID_REQUEST
+from model.one_shot_session import OneShotSession
+from service.handlers.one_shot_handler import OneShotHandler
+from service.handlers.session_player_message_handler import SessionPlayerMessageHandler
 from model import Session, InvalidRequest, IgnoredRequest, NonExistentPlayer, Player
-from session_manager import NonExistentSession
+from service.session_managers.session_manager import NonExistentSession
 from utils.thread import sleep
 
 START_REQUEST_PREFIX: str = "s"
@@ -15,7 +17,7 @@ _CONFIRMATION_RETRIES: int = 8
 _SECONDS_BETWEEN_CONFIRMATION_RETRIES: float = 0.1
 
 
-class StartHandler(SessionPlayerHandler):
+class StartHandler(OneShotHandler, SessionPlayerMessageHandler):
 
     def get_message_prefix(self) -> str:
         return START_REQUEST_PREFIX
@@ -26,7 +28,7 @@ class StartHandler(SessionPlayerHandler):
                            f"Source: {address}")
 
         try:
-            session: Session = self._session_manager.get(session_name)
+            session: OneShotSession = self._get_session_manager().get(session_name)
 
             if not session.is_host(address):
                 self._logger.debug(f"Requester address {address} is not host, cannot accept start request")
@@ -69,9 +71,9 @@ class StartHandler(SessionPlayerHandler):
 
                 for player in player_list_copy:
                     self._send_message(player.get_address(),
-                                      f"{START_REQUEST_PREFIX}"
-                                      f":{player.port}"
-                                      f":{session.get_players_addresses_except(player)}")
+                                       f"{START_REQUEST_PREFIX}"
+                                       f":{player.port}"
+                                       f":{session.get_players_addresses_string_except(player)}")
                 yield sleep(_SECONDS_BETWEEN_CONFIRMATION_RETRIES)
 
             self._session_manager.delete(session.name)

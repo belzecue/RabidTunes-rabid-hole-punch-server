@@ -1,17 +1,21 @@
 from typing import Tuple
 
-from errors import ERR_PLAYER_ADDRESS_MISMATCH, ERR_SESSION_PLAYER_NON_EXISTENT, \
+from constants.errors import ERR_PLAYER_ADDRESS_MISMATCH, ERR_SESSION_PLAYER_NON_EXISTENT, \
     ERR_SESSION_NON_EXISTENT
-from handlers.request_handler import INFO_PREFIX
-from handlers.session_player_handler import SessionPlayerHandler
-from handlers.start_handler import START_REQUEST_PREFIX
-from model import InvalidRequest, Session, Player, NonExistentPlayer
-from session_manager import NonExistentSession
+from model.one_shot_player import OneShotPlayer
+from model.one_shot_session import OneShotSession
+from model.session import NonExistentPlayer
+from server import InvalidRequest
+from service.handlers.one_shot_handler import OneShotHandler
+from service.handlers.request_handler import INFO_PREFIX
+from service.handlers.session_player_message_handler import SessionPlayerMessageHandler
+from service.handlers.start_handler import START_REQUEST_PREFIX
+from service.session_managers.session_manager import NonExistentSession
 
 _PING_REQUEST_PREFIX: str = "p"
 
 
-class PingHandler(SessionPlayerHandler):
+class PingOneShotHandler(OneShotHandler, SessionPlayerMessageHandler):
 
     def get_message_prefix(self) -> str:
         return _PING_REQUEST_PREFIX
@@ -22,8 +26,8 @@ class PingHandler(SessionPlayerHandler):
                            f"Source: {address}")
 
         try:
-            session: Session = self._session_manager.get(session_name)
-            player: Player = session.get_player(player_name)
+            session: OneShotSession = self._get_session_manager().get(session_name)
+            player: OneShotPlayer = session.get_player(player_name)
             if player.get_address() != address:
                 self._logger.debug(f"Address {address} does not match player {player_name} "
                                    f"address {player.get_address()}")
@@ -35,7 +39,7 @@ class PingHandler(SessionPlayerHandler):
                 self._send_message(address,
                                    f"{START_REQUEST_PREFIX}"
                                    f":{player.port}"
-                                   f":{session.get_players_addresses_except(player)}")
+                                   f":{session.get_players_addresses_string_except(player)}")
             else:
                 self._send_message(address, ":".join([INFO_PREFIX] + session.get_player_names()))
         except NonExistentSession:

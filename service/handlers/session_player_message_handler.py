@@ -2,13 +2,14 @@ import re
 from abc import ABC
 from typing import Tuple
 
-from errors import ERR_REQUEST_INVALID, ERR_INVALID_SESSION_NAME, ERR_INVALID_PLAYER_NAME
-from handlers.request_handler import RequestHandler
-from model import InvalidRequest
-from regexes import SESSION_NAME_REGEX, PLAYER_NAME_REGEX
+from constants.errors import ERR_INVALID_REQUEST, ERR_INVALID_SESSION_NAME, ERR_INVALID_PLAYER_NAME
+from server import InvalidRequest
+from service.handlers.request_handler import RequestHandler
+from constants.regexes import SESSION_NAME_REGEX, PLAYER_NAME_REGEX
 
 
-class SessionPlayerHandler(RequestHandler, ABC):
+class SessionPlayerMessageHandler(RequestHandler, ABC):
+
     def _parse_session_player_message_from(self, message: str, address: Tuple[str, int]) -> Tuple[str, str]:
         split = message.split(":")
         if len(split) == 2:
@@ -24,6 +25,6 @@ class SessionPlayerHandler(RequestHandler, ABC):
 
             return session_name, player_name
         else:
-            self._send_message(address, ERR_REQUEST_INVALID)
+            self._send_message(address, ERR_INVALID_REQUEST)
             raise InvalidRequest(f"Invalid session/player message received {message}")
 

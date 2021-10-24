@@ -1,16 +1,20 @@
 from typing import Tuple
 
-from errors import ERR_PLAYER_ADDRESS_EXIT_MISMATCH, ERR_SESSION_PLAYER_EXIT, ERR_SESSION_NON_EXISTENT, \
+from constants.errors import ERR_PLAYER_ADDRESS_EXIT_MISMATCH, ERR_SESSION_PLAYER_EXIT, ERR_SESSION_NON_EXISTENT, \
     ERR_SESSION_PLAYER_NON_EXISTENT
-from handlers.session_broadcaster_handler import SessionBroadcasterHandler
-from handlers.session_player_handler import SessionPlayerHandler
-from model import Session, Player, InvalidRequest, NonExistentPlayer
-from session_manager import NonExistentSession
+from model.one_shot_player import OneShotPlayer
+from model.one_shot_session import OneShotSession
+from model.session import NonExistentPlayer
+from server import InvalidRequest
+from service.handlers.one_shot_handler import OneShotHandler
+from service.handlers.session_info_broadcaster_handler import SessionInfoBroadcasterHandler
+from service.handlers.session_player_message_handler import SessionPlayerMessageHandler
+from service.session_managers.session_manager import NonExistentSession
 
 _EXIT_REQUEST_PREFIX: str = "x"
 
 
-class ExitHandler(SessionPlayerHandler, SessionBroadcasterHandler):
+class ExitOneShotHandler(OneShotHandler, SessionPlayerMessageHandler, SessionInfoBroadcasterHandler):
 
     def get_message_prefix(self) -> str:
         return _EXIT_REQUEST_PREFIX
@@ -21,12 +25,12 @@ class ExitHandler(SessionPlayerHandler, SessionBroadcasterHandler):
                            f"Source: {address}")
 
         try:
-            session: Session = self._session_manager.get(session_name)
+            session: OneShotSession = self._get_session_manager().get(session_name)
             if session.has_started():
                 self._logger.debug(f"Session {session_name} already started cannot exit now")
                 raise InvalidRequest("Session already started cannot accept exit request")
 
-            player: Player = session.get_player(player_name)
+            player: OneShotPlayer = session.get_player(player_name)
 
             if not address == player.get_address():
                 self._logger.debug(f"Requester address {address} is not same as player {player.name} stored address, "
@@ -36,12 +40,7 @@ class ExitHandler(SessionPlayerHandler, SessionBroadcasterHandler):
 
             session.remove_player(player.name)
             self._send_message(address, ERR_SESSION_PLAYER_EXIT)
-
-            if session.has_players():
-                self._broadcast_session_info(session)
-            else:
-                self._session_manager.delete(session_name)
-                self._logger.info(f"No more players in session {session_name}, deleted session")
+            self._broadcast_session_info(session)
         except NonExistentSession:
             self._logger.debug(f"Session {session_name} does not exist")
             self._send_message(address, ERR_SESSION_NON_EXISTENT)

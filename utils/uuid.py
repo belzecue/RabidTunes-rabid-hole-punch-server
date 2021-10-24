@@ -28,7 +28,7 @@ class UUIDGenerator(metaclass=Singleton):
             current_size += 1
 
         # Try first with a random uuid to avoid generating permutations (which is costly)
-        uuid: str = _get_random_string_from(UUID_CHARSET, current_size)
+        uuid: str = get_random_string(UUID_CHARSET, current_size)
         uuid_size_set: Set[str] = self._generated_uuids.get(current_size)
         if not uuid_size_set:
             self._generated_uuids[current_size] = set()
@@ -65,5 +65,5 @@ def _get_permutations_number_for(charset: str, size: int):
     return factorial(len(charset)) // factorial(len(charset) - size)
 
 
-def _get_random_string_from(charset: str, length: int) -> str:
+def get_random_string(charset: str, length: int) -> str:
     return ''.join(choice(charset) for _ in range(length))

@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from logging import Logger
 from typing import Tuple, Callable
 
-from session_manager import SessionManager
+from service.session_managers.session_manager import SessionManager
 from utils import logger
 
 INFO_PREFIX: str = "i"
@@ -12,7 +12,6 @@ class RequestHandler(ABC):
 
     def __init__(self, send_message_function: Callable):
         self._logger: Logger = logger.get_logger(self.__class__.__name__)
-        self._session_manager: SessionManager = SessionManager()
         self._send_message = send_message_function
 
     @abstractmethod

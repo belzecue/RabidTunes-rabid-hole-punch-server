@@ -9,23 +9,20 @@ from twisted.internet import reactor
 from twisted.internet.defer import inlineCallbacks
 from twisted.internet.protocol import DatagramProtocol
 
-from session_manager import SessionManager
+from service.session_managers.session_manager import SessionManager
 from utils import logger
-from errors import *
+from constants.errors import *
 
-from handlers.request_handler import RequestHandler
-from model import Session, InvalidRequest, IgnoredRequest
-# This "from handlers import *" is used to dynamically load the request handlers
+from service.handlers.request_handler import RequestHandler
+# This "from service.handlers import *" is used to dynamically load the request handlers
 # Do not remove the 'noinspection' statement otherwise you might delete it when optimizing imports
 # noinspection PyUnresolvedReferences
-from handlers import *
+from service.handlers import *
 from utils.reflection import get_all_subclasses
 from utils.thread import sleep
 
 _SCHEDULED_SESSION_CLEANUP_SECONDS: float = 60 * 5
 _SCHEDULED_PLAYER_CLEANUP_SECONDS: float = 8
-
-
 _MAX_RETRIES: int = 20
 _SECONDS_TO_RETRY: float = 0.1
 
@@ -40,6 +37,17 @@ class Server(DatagramProtocol):
         reactor.callLater(_SCHEDULED_SESSION_CLEANUP_SECONDS, self._cleanup_sessions)
         reactor.callLater(_SCHEDULED_PLAYER_CLEANUP_SECONDS, self._cleanup_players)
 
+    def _initialize_request_handlers(self):
+        all_handlers: set = get_all_subclasses(RequestHandler)
+        for handler_class in all_handlers:
+            if isabstract(handler_class):
+                continue
+            handler = handler_class(self._send_message)
+            if handler.get_message_prefix() in self._handlers.keys():
+                raise Exception(f"Duplicated handler for {handler.get_message_prefix()}")
+            self._handlers[handler.get_message_prefix()] = handler
+            self._logger.debug(f"{handler.__class__.__name__} loaded")
+
     def datagramReceived(self, datagram, address):
         datagram_string = datagram.decode("utf-8")
         self._logger.debug(f"Received datagram {datagram_string}")
@@ -47,7 +55,7 @@ class Server(DatagramProtocol):
         try:
             message_type, message = self._parse_datagram_string(datagram_string, address)
             if message_type not in self._handlers.keys():
-                raise InvalidRequest
+                raise InvalidRequest("Unknown message type")
             self._handlers[message_type].handle_message(message, address)
         except IgnoredRequest:
             pass
@@ -56,12 +64,13 @@ class Server(DatagramProtocol):
         except Exception as e:
             self._logger.error(f"Uncontrolled error: {str(e)}")
 
-    def _parse_datagram_string(self, data_string: str, address: Tuple) -> Tuple:
+    def _parse_datagram_string(self, data_string: str, address: Tuple[str, int]) -> Tuple[str, str]:
         split = data_string.split(":", 1)
         if len(split) != 2:
             self._logger.debug(f"Invalid datagram received {data_string}")
-            self._send_message(address, ERR_REQUEST_INVALID)
+            self._send_message(address, ERR_INVALID_REQUEST)
             raise InvalidRequest(f"Invalid datagram received {data_string}")
+        # MessageType, Message
         return split[0], split[1]
 
     @inlineCallbacks
@@ -79,20 +88,10 @@ class Server(DatagramProtocol):
         except Exception as e:
             self._logger.error(f"Uncontrolled error: {str(e)}")
 
-    def _initialize_request_handlers(self):
-        all_handlers: set = get_all_subclasses(RequestHandler)
-        for handler_class in all_handlers:
-            if isabstract(handler_class):
-                continue
-            handler = handler_class(self._send_message)
-            if handler.get_message_prefix() in self._handlers.keys():
-                raise Exception(f"Duplicated handler for {handler.get_message_prefix()}")
-            self._handlers[handler.get_message_prefix()] = handler
-            self._logger.debug(f"{handler.__class__.__name__} loaded")
-
     """
     Async background tasks
     """
+
     def _cleanup_sessions(self):
         all_sessions: List[Session] = list(self._session_manager.get_all_sessions())
         if all_sessions:
@@ -178,3 +177,10 @@ class Server(DatagramProtocol):
         # TODO Leave place for a new candidate if there's room for it
     """
 
+
+class InvalidRequest(Exception):
+    pass
+
+
+class IgnoredRequest(Exception):
+    pass

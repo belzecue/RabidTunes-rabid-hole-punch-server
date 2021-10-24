@@ -1,10 +1,10 @@
 from abc import ABC
 
-from handlers.request_handler import RequestHandler, INFO_PREFIX
-from model import Session
+from model.session import Session
+from service.handlers.request_handler import RequestHandler, INFO_PREFIX
 
 
-class SessionBroadcasterHandler(RequestHandler, ABC):
+class SessionInfoBroadcasterHandler(RequestHandler, ABC):
 
     def _broadcast_session_info(self, session: Session):
         for player in session.get_players():
