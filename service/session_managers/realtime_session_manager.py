@@ -1,10 +1,15 @@
+from string import ascii_uppercase, digits, ascii_lowercase
 from typing import Dict, Tuple
 
 from model.realtime_player import RealtimePlayer
 from model.realtime_session import RealtimeSession
 from service.session_managers.session_manager import SessionManager
+from utils.uuid import get_random_string
 
-REALTIME_TYPE = "realtime"
+REALTIME_TYPE: str = "realtime"
+
+_REALTIME_SECRET_CHARSET: str = ascii_uppercase + ascii_lowercase + digits
+_REALTIME_SECRET_LENGTH: int = 12
 
 
 class RealtimeSessionManager(SessionManager[RealtimeSession, RealtimePlayer]):
@@ -25,7 +30,8 @@ class RealtimeSessionManager(SessionManager[RealtimeSession, RealtimePlayer]):
 
     def _generate_session(self, name: str, max_players: int,
                           host: RealtimePlayer, password: str = None) -> RealtimeSession:
-        session: RealtimeSession = RealtimeSession(name, max_players, host, password)
-        session.set_realtime_secret(secret)  # TODO
+        # This secret will be sent to host and will be used to identify them in order to know new ports they open
+        secret: str = get_random_string(_REALTIME_SECRET_CHARSET, _REALTIME_SECRET_LENGTH)
+        session: RealtimeSession = RealtimeSession(name, max_players, host, secret, password)
         return session
 

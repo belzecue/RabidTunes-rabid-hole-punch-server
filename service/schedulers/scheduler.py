@@ -6,7 +6,7 @@ from twisted.internet import reactor
 from utils import logger
 
 
-class Scheduled(ABC):
+class Scheduler(ABC):
 
     def __init__(self, args: Dict = None, auto_schedule: bool = True):
         if args is None:
@@ -17,14 +17,6 @@ class Scheduled(ABC):
         if auto_schedule:
             self._schedule()
 
-    def _schedule(self):
-        reactor.callLater(self.get_seconds_for_next_execution(), self._run_and_reschedule)
-
-    def _run_and_reschedule(self):
-        self.run()
-        if self._scheduling:
-            reactor.callLater(self.get_seconds_for_next_execution(), self._run_and_reschedule)
-
     @abstractmethod
     def get_seconds_for_next_execution(self) -> float:
         raise NotImplementedError
@@ -32,3 +24,11 @@ class Scheduled(ABC):
     @abstractmethod
     def run(self):
         raise NotImplementedError
+
+    def _schedule(self):
+        reactor.callLater(self.get_seconds_for_next_execution(), self._run_and_reschedule)
+
+    def _run_and_reschedule(self):
+        self.run()
+        if self._scheduling:
+            reactor.callLater(self.get_seconds_for_next_execution(), self._run_and_reschedule)

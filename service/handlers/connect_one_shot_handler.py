@@ -6,7 +6,7 @@ from model.one_shot_player import OneShotPlayer
 from model.one_shot_session import OneShotSession
 from server import InvalidRequest, IgnoredRequest
 from service.handlers.connect_message_handler import ConnectMessageHandler
-from service.handlers.one_shot_handler import OneShotHandler
+from service.handlers.one_shot_session_manager_handler import OneShotSessionManagerHandler
 from service.handlers.request_handler import INFO_PREFIX
 from service.handlers.session_info_broadcaster_handler import SessionInfoBroadcasterHandler
 from service.session_managers.session_manager import NonExistentSession
@@ -14,7 +14,7 @@ from service.session_managers.session_manager import NonExistentSession
 _CONNECT_REQUEST_PREFIX: str = "c"
 
 
-class ConnectOneShotHandler(OneShotHandler, ConnectMessageHandler, SessionInfoBroadcasterHandler):
+class ConnectOneShotHandler(OneShotSessionManagerHandler, ConnectMessageHandler, SessionInfoBroadcasterHandler):
 
     def get_message_prefix(self) -> str:
         return _CONNECT_REQUEST_PREFIX

@@ -5,7 +5,7 @@ from service.handlers.session_manager_handler import SessionManagerHandler
 from service.session_managers.realtime_session_manager import RealtimeSessionManager
 
 
-class RealtimeHandler(SessionManagerHandler[RealtimeSessionManager], ABC):
+class RealtimeSessionManagerHandler(SessionManagerHandler[RealtimeSessionManager], ABC):
 
     def __init__(self, send_message_function: Callable):
         super().__init__(send_message_function)

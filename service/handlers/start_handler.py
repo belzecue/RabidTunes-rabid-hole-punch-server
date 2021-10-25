@@ -5,7 +5,7 @@ from twisted.internet.defer import inlineCallbacks
 from constants.errors import ERR_SESSION_PLAYER_NON_HOST, ERR_SESSION_SINGLE_PLAYER, ERR_SESSION_NON_EXISTENT, \
     ERR_SESSION_PLAYER_NON_EXISTENT, ERR_INVALID_REQUEST
 from model.one_shot_session import OneShotSession
-from service.handlers.one_shot_handler import OneShotHandler
+from service.handlers.one_shot_session_manager_handler import OneShotSessionManagerHandler
 from service.handlers.session_player_message_handler import SessionPlayerMessageHandler
 from model import Session, InvalidRequest, IgnoredRequest, NonExistentPlayer, Player
 from service.session_managers.session_manager import NonExistentSession
@@ -17,7 +17,7 @@ _CONFIRMATION_RETRIES: int = 8
 _SECONDS_BETWEEN_CONFIRMATION_RETRIES: float = 0.1
 
 
-class StartHandler(OneShotHandler, SessionPlayerMessageHandler):
+class StartHandler(OneShotSessionManagerHandler, SessionPlayerMessageHandler):
 
     def get_message_prefix(self) -> str:
         return START_REQUEST_PREFIX

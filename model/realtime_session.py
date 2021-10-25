@@ -1,21 +1,17 @@
-from string import ascii_uppercase, digits, ascii_lowercase
-from typing import Optional, Dict, List
+from typing import Dict, List
 
 from model.realtime_player import RealtimePlayer
 from model.session import Session
 from utils.time import DAYS_TO_MILLIS, current_time_millis
-from utils.uuid import get_random_string
 
 _SESSION_TIMEOUT_MILLIS: int = 1 * DAYS_TO_MILLIS
-_REALTIME_SECRET_CHARSET: str = ascii_uppercase + ascii_lowercase + digits
-_REALTIME_SECRET_LENGTH: int = 12
 
 
 class RealtimeSession(Session[RealtimePlayer]):
 
     def __init__(self, name: str, max_players: int, host: RealtimePlayer, secret: str, password: str = None):
         super().__init__(name, max_players, host, password)
-        self._realtime_secret: str = secret  # get_random_string(_REALTIME_SECRET_CHARSET, _REALTIME_SECRET_LENGTH)
+        self._realtime_secret: str = secret
         self._realtime_player_host_ports: Dict[str, int] = {}
 
     def is_timed_out(self) -> bool:

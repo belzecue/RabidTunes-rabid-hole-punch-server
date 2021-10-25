@@ -1,28 +1,28 @@
 """
 Server is the class that routes the requests
 to the appropiate handler
+TODO ADD EXPLANATION ON IMPORT AND NOINSPECTION
 """
 from inspect import isabstract
-from typing import Tuple, List
+from typing import Tuple
 
-from twisted.internet import reactor
 from twisted.internet.defer import inlineCallbacks
 from twisted.internet.protocol import DatagramProtocol
 
+from service.schedulers.message_sender_scheduler import SEND_MESSAGE_NAME
+from service.schedulers.scheduler import Scheduler
 from service.session_managers.session_manager import SessionManager
 from utils import logger
 from constants.errors import *
 
 from service.handlers.request_handler import RequestHandler
-# This "from service.handlers import *" is used to dynamically load the request handlers
-# Do not remove the 'noinspection' statement otherwise you might delete it when optimizing imports
 # noinspection PyUnresolvedReferences
 from service.handlers import *
+# noinspection PyUnresolvedReferences
+from service.schedulers import *
 from utils.reflection import get_all_subclasses
 from utils.thread import sleep
 
-_SCHEDULED_SESSION_CLEANUP_SECONDS: float = 60 * 5
-_SCHEDULED_PLAYER_CLEANUP_SECONDS: float = 8
 _MAX_RETRIES: int = 20
 _SECONDS_TO_RETRY: float = 0.1
 
@@ -32,10 +32,10 @@ class Server(DatagramProtocol):
     def __init__(self):
         self._logger = logger.get_logger("Server")
         self._handlers = {}
+        self._schedulers = {}
         self._session_manager = SessionManager()
         self._initialize_request_handlers()
-        reactor.callLater(_SCHEDULED_SESSION_CLEANUP_SECONDS, self._cleanup_sessions)
-        reactor.callLater(_SCHEDULED_PLAYER_CLEANUP_SECONDS, self._cleanup_players)
+        self._initialize_schedulers()
 
     def _initialize_request_handlers(self):
         all_handlers: set = get_all_subclasses(RequestHandler)
@@ -47,6 +47,15 @@ class Server(DatagramProtocol):
                 raise Exception(f"Duplicated handler for {handler.get_message_prefix()}")
             self._handlers[handler.get_message_prefix()] = handler
             self._logger.debug(f"{handler.__class__.__name__} loaded")
+
+    def _initialize_schedulers(self):
+        all_schedulers: set = get_all_subclasses(Scheduler)
+        for scheduler_class in all_schedulers:
+            if isabstract(scheduler_class):
+                continue
+            scheduler = scheduler_class({SEND_MESSAGE_NAME: self._send_message}, True)
+            self._schedulers[scheduler.__class__.__name__] = scheduler
+            self._logger.debug(f"{scheduler.__class__.__name__} loaded")
 
     def datagramReceived(self, datagram, address):
         datagram_string = datagram.decode("utf-8")
@@ -87,40 +96,6 @@ class Server(DatagramProtocol):
                 yield sleep(_SECONDS_TO_RETRY)
         except Exception as e:
             self._logger.error(f"Uncontrolled error: {str(e)}")
-
-    """
-    Async background tasks
-    """
-
-    def _cleanup_sessions(self):
-        all_sessions: List[Session] = list(self._session_manager.get_all_sessions())
-        if all_sessions:
-            self._logger.debug("Starting session cleanup")
-
-        for session in all_sessions:
-            if session.is_timed_out():
-                self._session_manager.delete(session.name)
-                for player in session.get_players():
-                    self._send_message(player.get_address(), ERR_SESSION_TIMEOUT, 3)
-                self._logger.info(f"Session {session.name} deleted because it timed out")
-        reactor.callLater(_SCHEDULED_SESSION_CLEANUP_SECONDS, self._cleanup_sessions)
-
-    def _cleanup_players(self):
-        all_sessions: List[Session] = list(self._session_manager.get_all_sessions())
-        if all_sessions:
-            self._logger.debug("Starting player cleanup")
-
-        for session in all_sessions:
-            to_kick = [player for player in session.get_players() if player.is_timed_out()]
-            for player in to_kick:
-                session.remove_player(player.name)
-                self._send_message(player.get_address(), ERR_PLAYER_TIMEOUT, 3)
-                self._logger.info(f"Kicked player {player.name} from session {session.name} because it timed out")
-            if not session.has_players():
-                self._session_manager.delete(session.name)
-                self._logger.info(f"No more players in session {session.name}, deleted session")
-                continue
-        reactor.callLater(_SCHEDULED_PLAYER_CLEANUP_SECONDS, self._cleanup_players)
 
     """
     def realtime_host_session(self, message: str, address: Tuple):

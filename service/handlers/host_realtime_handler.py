@@ -5,7 +5,7 @@ from constants.errors import ERR_SESSION_ALREADY_CREATED_FOR_ADDRESS, ERR_SESSIO
 from model.realtime_player import RealtimePlayer
 from model.realtime_session import RealtimeSession
 from service.handlers.host_message_handler import HostMessageHandler
-from service.handlers.realtime_handler import RealtimeHandler
+from service.handlers.realtime_session_manager_handler import RealtimeSessionManagerHandler
 from service.handlers.request_handler import INFO_PREFIX
 from service.session_managers.session_manager import AddressAlreadyHasSession, NonExistentSession
 from utils.uuid import get_random_string
@@ -15,7 +15,7 @@ _REALTIME_SECRET_CHARSET: str = ascii_uppercase + ascii_lowercase + digits
 _REALTIME_SECRET_LENGTH: int = 12
 
 
-class HostRealtimeHandler(RealtimeHandler, HostMessageHandler):
+class HostRealtimeHandler(RealtimeSessionManagerHandler, HostMessageHandler):
 
     def get_message_prefix(self) -> str:
         return _HOST_REALTIME_REQUEST_PREFIX

@@ -5,7 +5,7 @@ from service.handlers.session_manager_handler import SessionManagerHandler
 from service.session_managers.one_shot_session_manager import OneShotSessionManager
 
 
-class OneShotHandler(SessionManagerHandler[OneShotSessionManager], ABC):
+class OneShotSessionManagerHandler(SessionManagerHandler[OneShotSessionManager], ABC):
 
     def __init__(self, send_message_function: Callable):
         super().__init__(send_message_function)

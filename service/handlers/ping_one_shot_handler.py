@@ -6,7 +6,7 @@ from model.one_shot_player import OneShotPlayer
 from model.one_shot_session import OneShotSession
 from model.session import NonExistentPlayer
 from server import InvalidRequest
-from service.handlers.one_shot_handler import OneShotHandler
+from service.handlers.one_shot_session_manager_handler import OneShotSessionManagerHandler
 from service.handlers.request_handler import INFO_PREFIX
 from service.handlers.session_player_message_handler import SessionPlayerMessageHandler
 from service.handlers.start_handler import START_REQUEST_PREFIX
@@ -15,7 +15,7 @@ from service.session_managers.session_manager import NonExistentSession
 _PING_REQUEST_PREFIX: str = "p"
 
 
-class PingOneShotHandler(OneShotHandler, SessionPlayerMessageHandler):
+class PingOneShotHandler(OneShotSessionManagerHandler, SessionPlayerMessageHandler):
 
     def get_message_prefix(self) -> str:
         return _PING_REQUEST_PREFIX

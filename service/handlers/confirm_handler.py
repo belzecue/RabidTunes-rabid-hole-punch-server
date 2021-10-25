@@ -4,7 +4,7 @@ from constants.errors import ERR_SESSION_NOT_STARTED, ERR_SESSION_NON_EXISTENT, 
     ERR_INVALID_REQUEST
 from model.one_shot_player import OneShotPlayer
 from model.one_shot_session import OneShotSession
-from service.handlers.one_shot_handler import OneShotHandler
+from service.handlers.one_shot_session_manager_handler import OneShotSessionManagerHandler
 from service.handlers.session_player_message_handler import SessionPlayerMessageHandler
 from model import Session, InvalidRequest, NonExistentPlayer, Player
 from service.session_managers.session_manager import NonExistentSession
@@ -12,7 +12,7 @@ from service.session_managers.session_manager import NonExistentSession
 _CONFIRM_REQUEST_PREFIX: str = "y"
 
 
-class ConfirmHandler(OneShotHandler, SessionPlayerMessageHandler):
+class ConfirmHandler(OneShotSessionManagerHandler, SessionPlayerMessageHandler):
 
     def get_message_prefix(self) -> str:
         return _CONFIRM_REQUEST_PREFIX

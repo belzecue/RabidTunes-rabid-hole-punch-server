@@ -6,7 +6,7 @@ from model.one_shot_player import OneShotPlayer
 from model.one_shot_session import OneShotSession
 from model.session import NonExistentPlayer
 from server import InvalidRequest
-from service.handlers.one_shot_handler import OneShotHandler
+from service.handlers.one_shot_session_manager_handler import OneShotSessionManagerHandler
 from service.handlers.session_info_broadcaster_handler import SessionInfoBroadcasterHandler
 from service.handlers.session_player_message_handler import SessionPlayerMessageHandler
 from service.session_managers.session_manager import NonExistentSession
@@ -14,7 +14,7 @@ from service.session_managers.session_manager import NonExistentSession
 _EXIT_REQUEST_PREFIX: str = "x"
 
 
-class ExitOneShotHandler(OneShotHandler, SessionPlayerMessageHandler, SessionInfoBroadcasterHandler):
+class ExitOneShotHandler(OneShotSessionManagerHandler, SessionPlayerMessageHandler, SessionInfoBroadcasterHandler):
 
     def get_message_prefix(self) -> str:
         return _EXIT_REQUEST_PREFIX
