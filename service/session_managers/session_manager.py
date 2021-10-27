@@ -1,4 +1,4 @@
-from abc import ABC, abstractmethod
+from abc import ABC, abstractmethod, ABCMeta
 from typing import Tuple, Dict, List, TypeVar, Generic
 
 from model.player import Player
@@ -13,7 +13,11 @@ S = TypeVar("S", bound=Session)
 P = TypeVar("P", bound=Player)
 
 
-class SessionManager(ABC, Generic[S, P], metaclass=Singleton):
+class MetaSessionManager(ABCMeta, Singleton):
+    pass
+
+
+class SessionManager(ABC, Generic[S, P], metaclass=MetaSessionManager):
 
     def __init__(self):
         self._logger = logger.get_logger(self.__class__.__name__)

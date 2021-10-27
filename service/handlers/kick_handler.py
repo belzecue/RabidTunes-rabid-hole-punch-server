@@ -5,7 +5,7 @@ from constants.errors import ERR_SESSION_PLAYER_NON_EXISTENT, ERR_SESSION_NON_EX
 from model.one_shot_player import OneShotPlayer
 from model.one_shot_session import OneShotSession
 from model.session import NonExistentPlayer
-from server import InvalidRequest
+from constants.exceptions import InvalidRequest
 from service.handlers.one_shot_session_manager_handler import OneShotSessionManagerHandler
 from service.handlers.session_info_broadcaster_handler import SessionInfoBroadcasterHandler
 from service.handlers.session_player_message_handler import SessionPlayerMessageHandler

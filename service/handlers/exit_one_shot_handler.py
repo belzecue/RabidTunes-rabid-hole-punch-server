@@ -5,7 +5,7 @@ from constants.errors import ERR_PLAYER_ADDRESS_EXIT_MISMATCH, ERR_SESSION_PLAYE
 from model.one_shot_player import OneShotPlayer
 from model.one_shot_session import OneShotSession
 from model.session import NonExistentPlayer
-from server import InvalidRequest
+from constants.exceptions import InvalidRequest
 from service.handlers.one_shot_session_manager_handler import OneShotSessionManagerHandler
 from service.handlers.session_info_broadcaster_handler import SessionInfoBroadcasterHandler
 from service.handlers.session_player_message_handler import SessionPlayerMessageHandler

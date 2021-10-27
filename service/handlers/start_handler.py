@@ -3,11 +3,13 @@ from typing import Tuple, List
 from twisted.internet.defer import inlineCallbacks
 
 from constants.errors import ERR_SESSION_PLAYER_NON_HOST, ERR_SESSION_SINGLE_PLAYER, ERR_SESSION_NON_EXISTENT, \
-    ERR_SESSION_PLAYER_NON_EXISTENT, ERR_INVALID_REQUEST
+    ERR_SESSION_PLAYER_NON_EXISTENT
+from constants.exceptions import IgnoredRequest, InvalidRequest
+from model.one_shot_player import OneShotPlayer
 from model.one_shot_session import OneShotSession
+from model.session import NonExistentPlayer
 from service.handlers.one_shot_session_manager_handler import OneShotSessionManagerHandler
 from service.handlers.session_player_message_handler import SessionPlayerMessageHandler
-from model import Session, InvalidRequest, IgnoredRequest, NonExistentPlayer, Player
 from service.session_managers.session_manager import NonExistentSession
 from utils.thread import sleep
 
@@ -54,7 +56,7 @@ class StartHandler(OneShotSessionManagerHandler, SessionPlayerMessageHandler):
             self._send_message(address, ERR_SESSION_PLAYER_NON_EXISTENT)
 
     @inlineCallbacks
-    def _broadcast_starting_session(self, session: Session):
+    def _broadcast_starting_session(self, session: OneShotSession):
         # TryExcept is required because @inlineCallbacks wraps this piece of code so
         # external TryExcept won't catch exceptions thrown here
         try:
@@ -62,7 +64,7 @@ class StartHandler(OneShotSessionManagerHandler, SessionPlayerMessageHandler):
                 # Create a copy of the list so we can avoid concurrency problems
                 # because this function can (and will) be executed in parallel with other handlers
                 # and we can run into concurrency issues within the loop when accessing the same list
-                player_list_copy: List[Player] = list(session.get_players())
+                player_list_copy: List[OneShotPlayer] = list(session.get_players())
 
                 if not player_list_copy:
                     # If no players are in list it means all players confirmed the address reception

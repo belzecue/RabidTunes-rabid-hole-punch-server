@@ -18,17 +18,19 @@ class RealtimeSession(Session[RealtimePlayer]):
         return current_time_millis() - self._created_at > _SESSION_TIMEOUT_MILLIS
 
     def get_realtime_host_info_for(self, player_name: str) -> List[str]:
-        """
-        If host has created a port for player_name this method will return [hostIP, hostPortForPlayerName]
-        Otherwise it will return a single element list containing ["wait"]
-        """
-        if player_name in self._realtime_player_host_ports.keys():
-            return [self.host.ip, str(self._realtime_player_host_ports[player_name])]
+        player: RealtimePlayer = self.get_player(player_name)
+        if player.has_host_port():
+            return [self.host.ip, str(player.host_port)]
         else:
             return ['wait']
 
     def get_realtime_secret(self) -> str:
         return self._realtime_secret
+
+    def secret_matches(self, input_secret: str) -> bool:
+        if input_secret is None:
+            return False
+        return self._realtime_secret == input_secret
 
     def __str__(self):
         return f"RealtimeSession({self.name}, {self._max_players}, {self.host}, {self._players}, {self._created_at})"

@@ -5,7 +5,7 @@ from typing import Tuple, Optional
 from constants.errors import ERR_INVALID_PLAYER_NAME, ERR_INVALID_MAX_PLAYERS, ERR_INVALID_SESSION_PASSWORD, \
     ERR_INVALID_REQUEST
 from constants.regexes import PLAYER_NAME_REGEX, MAX_PLAYERS_REGEX, SESSION_PASS_REGEX
-from server import InvalidRequest
+from constants.exceptions import InvalidRequest
 from service.handlers.request_handler import RequestHandler
 
 

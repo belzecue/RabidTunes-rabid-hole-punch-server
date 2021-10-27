@@ -9,6 +9,7 @@ from typing import Tuple
 from twisted.internet.defer import inlineCallbacks
 from twisted.internet.protocol import DatagramProtocol
 
+from constants.exceptions import IgnoredRequest, InvalidRequest
 from service.schedulers.message_sender_scheduler import SEND_MESSAGE_NAME
 from service.schedulers.scheduler import Scheduler
 from service.session_managers.session_manager import SessionManager
@@ -33,7 +34,6 @@ class Server(DatagramProtocol):
         self._logger = logger.get_logger("Server")
         self._handlers = {}
         self._schedulers = {}
-        self._session_manager = SessionManager()
         self._initialize_request_handlers()
         self._initialize_schedulers()
 
@@ -46,7 +46,8 @@ class Server(DatagramProtocol):
             if handler.get_message_prefix() in self._handlers.keys():
                 raise Exception(f"Duplicated handler for {handler.get_message_prefix()}")
             self._handlers[handler.get_message_prefix()] = handler
-            self._logger.debug(f"{handler.__class__.__name__} loaded")
+            self._logger.debug(f"{handler.__class__.__name__} loaded and listening for '{handler.get_message_prefix()}'"
+                               f" requests")
 
     def _initialize_schedulers(self):
         all_schedulers: set = get_all_subclasses(Scheduler)
@@ -55,7 +56,8 @@ class Server(DatagramProtocol):
                 continue
             scheduler = scheduler_class({SEND_MESSAGE_NAME: self._send_message}, True)
             self._schedulers[scheduler.__class__.__name__] = scheduler
-            self._logger.debug(f"{scheduler.__class__.__name__} loaded")
+            self._logger.debug(f"{scheduler.__class__.__name__} loaded, will execute each "
+                               f"{scheduler.get_seconds_for_next_execution()} seconds")
 
     def datagramReceived(self, datagram, address):
         datagram_string = datagram.decode("utf-8")
@@ -151,11 +153,3 @@ class Server(DatagramProtocol):
         # TODO Move player from candidate list to confirmed player list, start sending this player in the pings
         # TODO Leave place for a new candidate if there's room for it
     """
-
-
-class InvalidRequest(Exception):
-    pass
-
-
-class IgnoredRequest(Exception):
-    pass
