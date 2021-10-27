@@ -1,7 +1,7 @@
 from typing import Optional
 
 from model.one_shot_player import OneShotPlayer
-from model.session import Session
+from model.abc_session import Session
 from utils.time import current_time_millis, MINUTES_TO_MILLIS
 
 _SESSION_TIMEOUT_MILLIS: int = 30 * MINUTES_TO_MILLIS

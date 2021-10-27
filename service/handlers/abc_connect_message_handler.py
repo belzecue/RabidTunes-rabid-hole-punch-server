@@ -6,7 +6,7 @@ from constants.errors import ERR_INVALID_REQUEST, ERR_INVALID_SESSION_PASSWORD, 
     ERR_INVALID_SESSION_NAME
 from constants.regexes import SESSION_PASS_REGEX, PLAYER_NAME_REGEX, SESSION_NAME_REGEX
 from constants.exceptions import InvalidRequest
-from service.handlers.request_handler import RequestHandler
+from service.handlers.abc_request_handler import RequestHandler
 
 
 class ConnectMessageHandler(RequestHandler, ABC):

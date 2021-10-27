@@ -1,7 +1,7 @@
 from abc import ABC
 from typing import Dict
 
-from service.schedulers.session_manager_scheduler import SessionManagerScheduler
+from service.schedulers.abc_session_manager_scheduler import SessionManagerScheduler
 from service.session_managers.one_shot_session_manager import OneShotSessionManager
 
 

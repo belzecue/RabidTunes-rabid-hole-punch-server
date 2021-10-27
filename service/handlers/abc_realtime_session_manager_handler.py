@@ -1,7 +1,7 @@
 from abc import ABC
 from collections import Callable
 
-from service.handlers.session_manager_handler import SessionManagerHandler
+from service.handlers.abc_session_manager_handler import SessionManagerHandler
 from service.session_managers.realtime_session_manager import RealtimeSessionManager
 
 

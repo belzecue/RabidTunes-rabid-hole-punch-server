@@ -2,8 +2,8 @@ from typing import List
 
 from constants.errors import ERR_SESSION_TIMEOUT
 from model.one_shot_session import OneShotSession
-from service.schedulers.message_sender_scheduler import MessageSenderScheduler
-from service.schedulers.one_shot_session_manager_scheduler import OneShotSessionManagerScheduler
+from service.schedulers.abc_message_sender_scheduler import MessageSenderScheduler
+from service.schedulers.abc_one_shot_session_manager_scheduler import OneShotSessionManagerScheduler
 from utils.time import MINUTES_TO_SECONDS
 
 _SCHEDULED_SESSION_CLEANUP_SECONDS: float = 5 * MINUTES_TO_SECONDS

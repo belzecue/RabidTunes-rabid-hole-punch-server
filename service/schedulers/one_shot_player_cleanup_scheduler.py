@@ -3,8 +3,8 @@ from typing import List
 from constants.errors import ERR_PLAYER_TIMEOUT
 from model.one_shot_player import OneShotPlayer
 from model.one_shot_session import OneShotSession
-from service.schedulers.message_sender_scheduler import MessageSenderScheduler
-from service.schedulers.one_shot_session_manager_scheduler import OneShotSessionManagerScheduler
+from service.schedulers.abc_message_sender_scheduler import MessageSenderScheduler
+from service.schedulers.abc_one_shot_session_manager_scheduler import OneShotSessionManagerScheduler
 
 _SCHEDULED_PLAYER_CLEANUP_SECONDS: float = 8
 

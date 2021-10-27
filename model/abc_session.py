@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Optional, Dict, List, Tuple, TypeVar, Generic
 
-from model.player import Player
+from model.abc_player import Player
 from utils.time import current_time_millis
 
 P = TypeVar("P", bound=Player)

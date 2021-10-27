@@ -7,10 +7,10 @@ from constants.errors import ERR_SESSION_PLAYER_NON_HOST, ERR_SESSION_SINGLE_PLA
 from constants.exceptions import IgnoredRequest, InvalidRequest
 from model.one_shot_player import OneShotPlayer
 from model.one_shot_session import OneShotSession
-from model.session import NonExistentPlayer
-from service.handlers.one_shot_session_manager_handler import OneShotSessionManagerHandler
-from service.handlers.session_player_message_handler import SessionPlayerMessageHandler
-from service.session_managers.session_manager import NonExistentSession
+from model.abc_session import NonExistentPlayer
+from service.handlers.abc_one_shot_session_manager_handler import OneShotSessionManagerHandler
+from service.handlers.abc_session_player_message_handler import SessionPlayerMessageHandler
+from service.session_managers.abc_session_manager import NonExistentSession
 from utils.thread import sleep
 
 START_REQUEST_PREFIX: str = "s"

@@ -4,13 +4,13 @@ from constants.errors import ERR_PLAYER_ADDRESS_MISMATCH, ERR_SESSION_PLAYER_NON
     ERR_SESSION_NON_EXISTENT
 from model.one_shot_player import OneShotPlayer
 from model.one_shot_session import OneShotSession
-from model.session import NonExistentPlayer
+from model.abc_session import NonExistentPlayer
 from constants.exceptions import InvalidRequest
-from service.handlers.one_shot_session_manager_handler import OneShotSessionManagerHandler
-from service.handlers.request_handler import INFO_PREFIX
-from service.handlers.session_player_message_handler import SessionPlayerMessageHandler
+from service.handlers.abc_one_shot_session_manager_handler import OneShotSessionManagerHandler
+from service.handlers.abc_request_handler import INFO_PREFIX
+from service.handlers.abc_session_player_message_handler import SessionPlayerMessageHandler
 from service.handlers.start_handler import START_REQUEST_PREFIX
-from service.session_managers.session_manager import NonExistentSession
+from service.session_managers.abc_session_manager import NonExistentSession
 
 _PING_REQUEST_PREFIX: str = "p"
 

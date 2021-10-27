@@ -5,9 +5,9 @@ from constants.errors import ERR_SESSION_SECRET_MISMATCH, ERR_SESSION_PLAYER_NON
 from model.realtime_player import RealtimePlayer
 from model.realtime_session import RealtimeSession
 from constants.exceptions import InvalidRequest
-from service.handlers.connect_message_handler import ConnectMessageHandler
-from service.handlers.realtime_session_manager_handler import RealtimeSessionManagerHandler
-from service.session_managers.session_manager import NonExistentSession
+from service.handlers.abc_connect_message_handler import ConnectMessageHandler
+from service.handlers.abc_realtime_session_manager_handler import RealtimeSessionManagerHandler
+from service.session_managers.abc_session_manager import NonExistentSession
 
 _HOST_NEW_PORT_PREFIX = "nc"
 _CONNECT_REQUEST_PREFIX: str = "rc"  # TODO Duplicated constant

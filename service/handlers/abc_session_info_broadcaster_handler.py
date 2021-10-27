@@ -1,7 +1,7 @@
 from abc import ABC
 
-from model.session import Session
-from service.handlers.request_handler import RequestHandler, INFO_PREFIX
+from model.abc_session import Session
+from service.handlers.abc_request_handler import RequestHandler, INFO_PREFIX
 
 
 class SessionInfoBroadcasterHandler(RequestHandler, ABC):

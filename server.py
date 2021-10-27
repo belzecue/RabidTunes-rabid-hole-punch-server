@@ -10,13 +10,13 @@ from twisted.internet.defer import inlineCallbacks
 from twisted.internet.protocol import DatagramProtocol
 
 from constants.exceptions import IgnoredRequest, InvalidRequest
-from service.schedulers.message_sender_scheduler import SEND_MESSAGE_NAME
-from service.schedulers.scheduler import Scheduler
-from service.session_managers.session_manager import SessionManager
+from service.schedulers.abc_message_sender_scheduler import SEND_MESSAGE_NAME
+from service.schedulers.abc_scheduler import Scheduler
+from service.session_managers.abc_session_manager import SessionManager
 from utils import logger
 from constants.errors import *
 
-from service.handlers.request_handler import RequestHandler
+from service.handlers.abc_request_handler import RequestHandler
 # noinspection PyUnresolvedReferences
 from service.handlers import *
 # noinspection PyUnresolvedReferences

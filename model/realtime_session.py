@@ -1,7 +1,7 @@
 from typing import Dict, List
 
 from model.realtime_player import RealtimePlayer
-from model.session import Session
+from model.abc_session import Session
 from utils.time import DAYS_TO_MILLIS, current_time_millis
 
 _SESSION_TIMEOUT_MILLIS: int = 1 * DAYS_TO_MILLIS

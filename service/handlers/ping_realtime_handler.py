@@ -3,11 +3,11 @@ from typing import Tuple
 from constants.errors import ERR_SESSION_NON_EXISTENT, ERR_SESSION_PLAYER_NON_EXISTENT, ERR_SESSION_PLAYER_NON_HOST
 from model.realtime_player import RealtimePlayer
 from model.realtime_session import RealtimeSession
-from model.session import NonExistentPlayer
+from model.abc_session import NonExistentPlayer
 from constants.exceptions import InvalidRequest
-from service.handlers.realtime_session_manager_handler import RealtimeSessionManagerHandler
-from service.handlers.session_player_message_handler import SessionPlayerMessageHandler
-from service.session_managers.session_manager import NonExistentSession
+from service.handlers.abc_realtime_session_manager_handler import RealtimeSessionManagerHandler
+from service.handlers.abc_session_player_message_handler import SessionPlayerMessageHandler
+from service.session_managers.abc_session_manager import NonExistentSession
 
 _PING_REQUEST_PREFIX: str = "rp"
 

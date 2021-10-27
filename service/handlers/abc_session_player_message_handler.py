@@ -4,7 +4,7 @@ from typing import Tuple
 
 from constants.errors import ERR_INVALID_REQUEST, ERR_INVALID_SESSION_NAME, ERR_INVALID_PLAYER_NAME
 from constants.exceptions import InvalidRequest
-from service.handlers.request_handler import RequestHandler
+from service.handlers.abc_request_handler import RequestHandler
 from constants.regexes import SESSION_NAME_REGEX, PLAYER_NAME_REGEX
 
 

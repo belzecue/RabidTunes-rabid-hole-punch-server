@@ -6,7 +6,7 @@ from constants.errors import ERR_INVALID_PLAYER_NAME, ERR_INVALID_MAX_PLAYERS, E
     ERR_INVALID_REQUEST
 from constants.regexes import PLAYER_NAME_REGEX, MAX_PLAYERS_REGEX, SESSION_PASS_REGEX
 from constants.exceptions import InvalidRequest
-from service.handlers.request_handler import RequestHandler
+from service.handlers.abc_request_handler import RequestHandler
 
 
 class HostMessageHandler(RequestHandler, ABC):

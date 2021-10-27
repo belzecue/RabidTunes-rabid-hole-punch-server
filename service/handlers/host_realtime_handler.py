@@ -4,11 +4,11 @@ from typing import Tuple
 from constants.errors import ERR_SESSION_PLAYER_NON_HOST
 from model.realtime_player import RealtimePlayer
 from model.realtime_session import RealtimeSession
-from model.session import NonExistentPlayer
+from model.abc_session import NonExistentPlayer
 from constants.exceptions import InvalidRequest
-from service.handlers.host_message_handler import HostMessageHandler
-from service.handlers.realtime_session_manager_handler import RealtimeSessionManagerHandler
-from service.session_managers.session_manager import AddressAlreadyHasSession, NonExistentSession
+from service.handlers.abc_host_message_handler import HostMessageHandler
+from service.handlers.abc_realtime_session_manager_handler import RealtimeSessionManagerHandler
+from service.session_managers.abc_session_manager import AddressAlreadyHasSession, NonExistentSession
 
 _HOST_REALTIME_REQUEST_PREFIX: str = "rh"
 _OK_ANSWER: str = "ok"  # TODO Duplicated constant

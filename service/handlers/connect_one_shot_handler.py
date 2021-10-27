@@ -5,11 +5,11 @@ from constants.errors import ERR_SESSION_PASSWORD_MISMATCH, ERR_SESSION_PLAYER_N
 from model.one_shot_player import OneShotPlayer
 from model.one_shot_session import OneShotSession
 from constants.exceptions import InvalidRequest, IgnoredRequest
-from service.handlers.connect_message_handler import ConnectMessageHandler
-from service.handlers.one_shot_session_manager_handler import OneShotSessionManagerHandler
-from service.handlers.request_handler import INFO_PREFIX
-from service.handlers.session_info_broadcaster_handler import SessionInfoBroadcasterHandler
-from service.session_managers.session_manager import NonExistentSession
+from service.handlers.abc_connect_message_handler import ConnectMessageHandler
+from service.handlers.abc_one_shot_session_manager_handler import OneShotSessionManagerHandler
+from service.handlers.abc_request_handler import INFO_PREFIX
+from service.handlers.abc_session_info_broadcaster_handler import SessionInfoBroadcasterHandler
+from service.session_managers.abc_session_manager import NonExistentSession
 
 _CONNECT_REQUEST_PREFIX: str = "c"
 

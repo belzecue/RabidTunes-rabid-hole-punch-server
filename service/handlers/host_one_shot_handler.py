@@ -3,12 +3,12 @@ from typing import Tuple
 from constants.errors import ERR_SESSION_PLAYER_NON_HOST
 from model.one_shot_player import OneShotPlayer
 from model.one_shot_session import OneShotSession
-from model.session import NonExistentPlayer
+from model.abc_session import NonExistentPlayer
 from constants.exceptions import InvalidRequest
-from service.handlers.host_message_handler import HostMessageHandler
-from service.handlers.one_shot_session_manager_handler import OneShotSessionManagerHandler
-from service.handlers.request_handler import INFO_PREFIX
-from service.session_managers.session_manager import AddressAlreadyHasSession, NonExistentSession
+from service.handlers.abc_host_message_handler import HostMessageHandler
+from service.handlers.abc_one_shot_session_manager_handler import OneShotSessionManagerHandler
+from service.handlers.abc_request_handler import INFO_PREFIX
+from service.session_managers.abc_session_manager import AddressAlreadyHasSession, NonExistentSession
 
 _HOST_REQUEST_PREFIX: str = "h"
 

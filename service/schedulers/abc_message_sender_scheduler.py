@@ -1,7 +1,7 @@
 from abc import ABC
 from typing import Callable, Dict
 
-from service.schedulers.scheduler import Scheduler
+from service.schedulers.abc_scheduler import Scheduler
 
 SEND_MESSAGE_NAME: str = "send_message_function"
 

@@ -1,6 +1,6 @@
 from typing import Optional
 
-from model.player import Player
+from model.abc_player import Player
 
 
 class RealtimePlayer(Player):

@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod, ABCMeta
 from typing import Tuple, Dict, List, TypeVar, Generic
 
-from model.player import Player
-from model.session import Session
+from model.abc_player import Player
+from model.abc_session import Session
 from utils import logger
 from utils.singleton import Singleton
 from utils.uuid import UUIDGenerator

@@ -4,12 +4,12 @@ from constants.errors import ERR_SESSION_PLAYER_NON_EXISTENT, ERR_SESSION_NON_EX
     ERR_SESSION_PLAYER_KICKED_BY_HOST
 from model.one_shot_player import OneShotPlayer
 from model.one_shot_session import OneShotSession
-from model.session import NonExistentPlayer
+from model.abc_session import NonExistentPlayer
 from constants.exceptions import InvalidRequest
-from service.handlers.one_shot_session_manager_handler import OneShotSessionManagerHandler
-from service.handlers.session_info_broadcaster_handler import SessionInfoBroadcasterHandler
-from service.handlers.session_player_message_handler import SessionPlayerMessageHandler
-from service.session_managers.session_manager import NonExistentSession
+from service.handlers.abc_one_shot_session_manager_handler import OneShotSessionManagerHandler
+from service.handlers.abc_session_info_broadcaster_handler import SessionInfoBroadcasterHandler
+from service.handlers.abc_session_player_message_handler import SessionPlayerMessageHandler
+from service.session_managers.abc_session_manager import NonExistentSession
 
 _KICK_REQUEST_PREFIX: str = "k"
 

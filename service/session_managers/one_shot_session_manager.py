@@ -2,7 +2,7 @@ from typing import Dict, Tuple
 
 from model.one_shot_player import OneShotPlayer
 from model.one_shot_session import OneShotSession
-from service.session_managers.session_manager import SessionManager
+from service.session_managers.abc_session_manager import SessionManager
 
 ONE_SHOT_TYPE: str = "one_shot"
 

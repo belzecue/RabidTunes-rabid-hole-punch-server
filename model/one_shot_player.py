@@ -1,4 +1,4 @@
-from model.player import Player
+from model.abc_player import Player
 from utils.time import current_time_millis, SECONDS_TO_MILLIS
 
 _PLAYER_TIMEOUT_MILLIS: int = 5 * SECONDS_TO_MILLIS

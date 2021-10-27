@@ -3,7 +3,7 @@ from typing import Dict, Tuple
 
 from model.realtime_player import RealtimePlayer
 from model.realtime_session import RealtimeSession
-from service.session_managers.session_manager import SessionManager
+from service.session_managers.abc_session_manager import SessionManager
 from utils.uuid import get_random_string
 
 REALTIME_TYPE: str = "realtime"

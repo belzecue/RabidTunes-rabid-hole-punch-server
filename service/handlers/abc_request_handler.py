@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from logging import Logger
 from typing import Tuple, Callable
 
-from service.session_managers.session_manager import SessionManager
+from service.session_managers.abc_session_manager import SessionManager
 from utils import logger
 
 INFO_PREFIX: str = "i"
