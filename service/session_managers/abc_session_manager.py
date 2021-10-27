@@ -7,8 +7,6 @@ from utils import logger
 from utils.singleton import Singleton
 from utils.uuid import UUIDGenerator
 
-# TODO CHECK IF REMOVING A PLAYER UPDATES THE SESSIONS BY ADDRESS
-
 S = TypeVar("S", bound=Session)
 P = TypeVar("P", bound=Player)
 
@@ -78,6 +76,14 @@ class SessionManager(ABC, Generic[S, P], metaclass=MetaSessionManager):
         else:
             self._logger.debug(f"Session {session_name} is already deleted")
         self._uuid_generator.free_uuid(session_name)
+
+    def update_address_for(self, session_name: str, old_address: Tuple[str, int]):
+        session: S = self.get(session_name)
+        if session.has_players():
+            self._get_sessions_by_address()[session.host.get_address()] = \
+                self._get_sessions_by_address().pop(old_address)
+            self._logger.debug(f"Updated address index for session {session_name}, "
+                               f"old {old_address} new {session.host.get_address()}")
 
     def _has_session(self, session_name: str) -> bool:
         return bool(self._get_sessions_by_name().get(session_name))

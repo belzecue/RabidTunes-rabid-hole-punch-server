@@ -38,7 +38,10 @@ class ExitOneShotHandler(OneShotSessionManagerHandler, SessionPlayerMessageHandl
                 self._send_message(address, ERR_PLAYER_ADDRESS_EXIT_MISMATCH)
                 raise InvalidRequest("Requester is not same as exit player, cannot accept exit request")
 
+            host_left: bool = session.is_host(player.get_address())
             session.remove_player(player.name)
+            if host_left and session.has_players():
+                self._get_session_manager().update_address_for(session_name, address)
             self._send_message(address, ERR_SESSION_PLAYER_EXIT)
             self._broadcast_session_info(session)
         except NonExistentSession:

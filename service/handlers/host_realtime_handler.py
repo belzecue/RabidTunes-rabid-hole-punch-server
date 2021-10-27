@@ -7,11 +7,10 @@ from model.realtime_session import RealtimeSession
 from model.abc_session import NonExistentPlayer
 from constants.exceptions import InvalidRequest
 from service.handlers.abc_host_message_handler import HostMessageHandler
-from service.handlers.abc_realtime_session_manager_handler import RealtimeSessionManagerHandler
+from service.handlers.abc_realtime_session_manager_handler import RealtimeSessionManagerHandler, _OK_ANSWER
 from service.session_managers.abc_session_manager import AddressAlreadyHasSession, NonExistentSession
 
 _HOST_REALTIME_REQUEST_PREFIX: str = "rh"
-_OK_ANSWER: str = "ok"  # TODO Duplicated constant
 _REALTIME_SECRET_CHARSET: str = ascii_uppercase + ascii_lowercase + digits
 _REALTIME_SECRET_LENGTH: int = 12
 
@@ -27,7 +26,7 @@ class HostRealtimeHandler(RealtimeSessionManagerHandler, HostMessageHandler):
         self._logger.debug(f"Received request from player {player_name} to host realtime session for max {max_players} "
                            f"players. Source: {address}")
         try:
-            player: RealtimePlayer = RealtimePlayer(player_name, ip, port)
+            player: RealtimePlayer = RealtimePlayer(player_name, ip, port, -1)  # If host set host port as negative
             session: RealtimeSession = self._get_session_manager().create(player, max_players, password)
             self._logger.info(f"Created realtime session {session.name} (max {max_players} players)")
             self._send_message(address, ":".join([_OK_ANSWER, session.name, session.get_realtime_secret()]))

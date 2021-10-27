@@ -6,6 +6,7 @@ from model.realtime_session import RealtimeSession
 from model.abc_session import NonExistentPlayer
 from constants.exceptions import InvalidRequest
 from service.handlers.abc_realtime_session_manager_handler import RealtimeSessionManagerHandler
+from service.handlers.abc_request_handler import INFO_PREFIX
 from service.handlers.abc_session_player_message_handler import SessionPlayerMessageHandler
 from service.session_managers.abc_session_manager import NonExistentSession
 
@@ -37,7 +38,7 @@ class PingRealtimeHandler(RealtimeSessionManagerHandler, SessionPlayerMessageHan
                 raise InvalidRequest("Address does not match player address for ping")
 
             player.update_last_seen()
-            self._send_message(address, "I DONT KNOW LOL")  # TODO
+            self._send_message(address, ":".join([INFO_PREFIX] + session.get_player_names()))
         except NonExistentSession:
             self._logger.debug(f"Session {session_name} does not exist")
             self._send_message(address, ERR_SESSION_NON_EXISTENT)

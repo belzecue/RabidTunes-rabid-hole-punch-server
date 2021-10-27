@@ -5,16 +5,15 @@ from constants.errors import ERR_SESSION_SECRET_MISMATCH, ERR_SESSION_PLAYER_NON
 from model.realtime_player import RealtimePlayer
 from model.realtime_session import RealtimeSession
 from constants.exceptions import InvalidRequest
-from service.handlers.abc_connect_message_handler import ConnectMessageHandler
-from service.handlers.abc_realtime_session_manager_handler import RealtimeSessionManagerHandler
+from service.handlers.abc_realtime_connect_message_handler import RealtimeConnectMessageHandler, \
+    _REALTIME_CONNECT_REQUEST_PREFIX
+from service.handlers.abc_realtime_session_manager_handler import RealtimeSessionManagerHandler, _OK_ANSWER
 from service.session_managers.abc_session_manager import NonExistentSession
 
 _HOST_NEW_PORT_PREFIX = "nc"
-_CONNECT_REQUEST_PREFIX: str = "rc"  # TODO Duplicated constant
-_OK_ANSWER: str = "ok"  # TODO Duplicated constant
 
 
-class HostNewPortHandler(RealtimeSessionManagerHandler, ConnectMessageHandler):
+class HostNewPortHandler(RealtimeSessionManagerHandler, RealtimeConnectMessageHandler):
 
     def get_message_prefix(self) -> str:
         return _HOST_NEW_PORT_PREFIX
@@ -46,7 +45,7 @@ class HostNewPortHandler(RealtimeSessionManagerHandler, ConnectMessageHandler):
 
             player.host_port = port
             self._send_message(session.host.get_address(), ":".join([_OK_ANSWER, player_name]))
-            self._send_message(address, ":".join([_CONNECT_REQUEST_PREFIX] +
+            self._send_message(address, ":".join([_REALTIME_CONNECT_REQUEST_PREFIX] +
                                                  session.get_realtime_host_info_for(player_name)))
             self._logger.info(f"Created host port for player {player_name} in realtime session {session_name}")
         except NonExistentSession:

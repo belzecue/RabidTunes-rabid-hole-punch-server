@@ -17,11 +17,11 @@ class OneShotSessionCleanupScheduler(MessageSenderScheduler, OneShotSessionManag
     def run(self):
         all_sessions: List[OneShotSession] = list(self._get_session_manager().get_all_sessions())
         if all_sessions:
-            self._logger.debug("Starting session cleanup")
+            self._logger.debug("Starting one shot session cleanup")
 
         for session in all_sessions:
             if session.is_timed_out():
                 self._session_manager.delete(session.name)
                 for player in session.get_players():
                     self._send_message(player.get_address(), ERR_SESSION_TIMEOUT, 3)
-                self._logger.info(f"Session {session.name} deleted because it timed out")
+                self._logger.info(f"One shot session {session.name} deleted because it timed out")

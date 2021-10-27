@@ -14,7 +14,7 @@ from service.session_managers.abc_session_manager import NonExistentSession
 _KICK_REQUEST_PREFIX: str = "k"
 
 
-class KickHandler(OneShotSessionManagerHandler, SessionPlayerMessageHandler, SessionInfoBroadcasterHandler):
+class KickOneShotHandler(OneShotSessionManagerHandler, SessionPlayerMessageHandler, SessionInfoBroadcasterHandler):
 
     def get_message_prefix(self) -> str:
         return _KICK_REQUEST_PREFIX
@@ -37,7 +37,10 @@ class KickHandler(OneShotSessionManagerHandler, SessionPlayerMessageHandler, Ses
                 raise InvalidRequest("Session already started cannot accept kick request")
 
             player_to_kick: OneShotPlayer = session.get_player(player_name)
+            host_left: bool = session.is_host(player_to_kick.get_address())
             session.remove_player(player_to_kick.name)
+            if host_left:
+                self._get_session_manager().update_address_for(session_name, address)
             self._send_message(player_to_kick.get_address(), ERR_SESSION_PLAYER_KICKED_BY_HOST)
             self._broadcast_session_info(session)
         except NonExistentSession:
