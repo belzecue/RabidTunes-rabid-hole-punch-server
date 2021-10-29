@@ -17,13 +17,13 @@ while getopts ":p:df" o; do
             force=true
             ;;
         *)
+            usage
             ;;
     esac
 done
 shift $((OPTIND-1))
 
-if [ -z "${p}" ]; then
-    echo "caca"
+if [ -z "${port}" ]; then
     usage
 fi
 
