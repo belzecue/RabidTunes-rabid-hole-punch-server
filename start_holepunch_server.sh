@@ -23,6 +23,7 @@ done
 shift $((OPTIND-1))
 
 if [ -z "${p}" ]; then
+    echo "caca"
     usage
 fi
 
