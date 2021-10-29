@@ -27,7 +27,7 @@ if [ -z "${port}" ]; then
     usage
 fi
 
-server_pid=$(pgrep -f holepunch)
+server_pid=$(pgrep -f main_holepunch)
 if [ -z "${server_pid}" ]; then
   # Server is not running
   pip install -r requirements.txt
