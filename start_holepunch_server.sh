@@ -36,7 +36,7 @@ if [ -z "${server_pid}" ]; then
 else
   # Server is running
   if [ -z "$force" ]; then
-    kill "${server_pid}"
+    kill $((server_pid))
     pip install -r requirements.txt
     nohup python3 main_holepunch.py "$port" $debug >/dev/null 2>&1 &
     printf "Rabid Hole Punch server started on port %s\n" "$port"
