@@ -1,11 +1,11 @@
 from typing import Tuple
 
-from constants.errors import ERR_PLAYER_ADDRESS_EXIT_MISMATCH, ERR_SESSION_PLAYER_NON_HOST, ERR_SESSION_CLOSED, \
+from constants.errors import ERR_SESSION_PLAYER_NON_HOST, ERR_SESSION_CLOSED, \
     ERR_SESSION_NON_EXISTENT, ERR_SESSION_PLAYER_NON_EXISTENT
+from constants.exceptions import InvalidRequest
+from model.abc_session import NonExistentPlayer
 from model.realtime_player import RealtimePlayer
 from model.realtime_session import RealtimeSession
-from model.abc_session import NonExistentPlayer
-from constants.exceptions import InvalidRequest
 from service.handlers.abc_realtime_session_manager_handler import RealtimeSessionManagerHandler
 from service.handlers.abc_session_player_message_handler import SessionPlayerMessageHandler
 from service.session_managers.abc_session_manager import NonExistentSession

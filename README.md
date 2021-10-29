@@ -6,7 +6,7 @@ Python Server that allows peer to peer communication via UDP Hole Punching betwe
 
 ## Requirements
 
-- A public accessible machine with a udp port open
+- A public accessible machine with an udp port open
 - Python3 installed
 - Twisted installed. With Python3 installed you can run the command `pip install twisted` to do this
 
@@ -24,7 +24,7 @@ Notes:
 
 Server will start running in the specified port
 
-If some weird behaviour is happening and you want to print more information to debug, you can run the server using
+If some weird behaviour is happening, and you want to print more information to debug, you can run the server using
 
 ```
 python3 main.py <port> DEBUG
@@ -36,7 +36,7 @@ The server will generate log files with the name `rabid-hole-punch.log`
 
 ## Usage
 
-This server will start listening in the UDP port of your choice and it will wait for requests to arrive
+This server will start listening in the UDP port of your choice, and it will wait for requests to arrive
 
 You can implement a client for this server in any game engine of your choice, [but you have one already available for the Godot game engine here](https://gitlab.com/RabidTunes/rabid-hole-punch-godot)
 
@@ -168,7 +168,7 @@ Let's say Alice received that their port is 1234 and also received that Bob's po
 
 So Alice will test sending that message to the ports 5547, 5548, 5549, 5550, 5551, 5552, 5553, 5554, 5556, 5557, 5558, 5559, 5560, 5561, 5562 and 5563. It is extremely important that on each message the port sent is the port used to send that message, so when Bob receives the message, they can know which port the other peer used to reach them.
 
-After receiving enough greetings, each peer can decide what is the port they should use for communications. If the server said that a peer's port is 1234 but all greetings were received on poert 1240, that port should be used instead, so you should close the previously opened port for listening and change the port.
+After receiving enough greetings, each peer can decide what is the port they should use for communications. If the server said that a peer's port is 1234 but all greetings were received on port 1240, that port should be used instead, so you should close the previously opened port for listening and change the port.
 
 After this you can move on to the next phase.
 
@@ -176,7 +176,7 @@ After this you can move on to the next phase.
 
 After finishing sending greetings, each peer can be sure about one thing: their own port. The previous phase goal was to confirm the port opened for each peer. But each peers still doesn't know what is the confirmed port of the other peers.
 
-That's why in this stage we will send each peer confirmed port to other peers, so the other peers know what is the confirmed port for each peer. So for example if Alice confirme that their port is 1234, they should send to the others that port number alongside their name.
+That's why in this stage we will send each peer confirmed port to other peers, so the other peers know what is the confirmed port for each peer. So for example if Alice confirmed that their port is 1234, they should send to the others that port number alongside their name.
 
 But here's the catch: we still don't know the confirmed port for the others, so we still do have to send the confirmations inside a window of ports to be sure that our message reaches the others.
 
@@ -198,15 +198,15 @@ Once every peer has confirmed other's peer ports, the host can start the multipl
 
 ## Problems when communicating with other peers
 
-Just like with the relay server it could happen that some problems arise when communicating with other peers, even with what we did to try to mitigate issues. A few common problems you can have are:
+Just like with the relay server it could happen that some problems arise when communicating with other peers, even with what we did to try to mitigate issues. A few common problems you may have:
 
 ### Some client peers are not reachable
 
-If a peer does not receive any greeting in the greetings phase, they can consider that they are unreachable and unfortunately, this holepunch system is not a good fit for them
+If a peer does not receive any greeting in the greetings phase, they can consider that they are unreachable and unfortunately, this hole punch system is not a good fit for them
 
 ### Host is unreachable
 
-Imagine some peers receive greets from each other so they have enough greetings to confirm their own port, but when reaching the confirmations phase, the host never confirms its own port. This is a problem because you cannot have a multiplayer match without a host. A possible solution to this (which is not implemented right now in the Godot plugin by the way) is to change the player that will act as the host on the fly, although it can be difficult since every player should decide who will be the new host.
+Imagine some peers receive greets from each other, so they have enough greetings to confirm their own port, but when reaching the confirmations phase, the host never confirms its own port. This is a problem because you cannot have a multiplayer match without a host. A possible solution to this (which is not implemented right now in the Godot plugin by the way) is to change the player that will act as the host on the fly, although it can be difficult since every player should decide who will be the new host.
 
 # Credits
 

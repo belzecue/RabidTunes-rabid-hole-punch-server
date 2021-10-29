@@ -42,7 +42,7 @@ class ConnectRealtimeHandler(RealtimeSessionManagerHandler, RealtimeConnectMessa
                     raise InvalidRequest("Session already has a player with the exact same name coming from a "
                                          "different ip and port")
 
-                self._send_message(address, ":".join([_CONNECT_REQUEST_PREFIX] +
+                self._send_message(address, ":".join([_REALTIME_CONNECT_REQUEST_PREFIX] +
                                                      session.get_realtime_host_info_for(player_name)))
                 if not player.has_host_port():
                     self._send_message(session.host.get_address(), ":".join([_NEW_CONNECTION_TO_HOST_PREFIX,
@@ -55,7 +55,7 @@ class ConnectRealtimeHandler(RealtimeSessionManagerHandler, RealtimeConnectMessa
                 raise InvalidRequest("Session is full")
 
             session.add_player(RealtimePlayer(player_name, ip, port))
-            self._send_message(address, ":".join([_CONNECT_REQUEST_PREFIX] +
+            self._send_message(address, ":".join([_REALTIME_CONNECT_REQUEST_PREFIX] +
                                                  session.get_realtime_host_info_for(player_name)))
             self._send_message(session.host.get_address(), ":".join([_NEW_CONNECTION_TO_HOST_PREFIX,
                                                                      player_name, ip, str(port)]))

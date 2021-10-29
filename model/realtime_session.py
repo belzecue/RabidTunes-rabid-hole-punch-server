@@ -19,10 +19,8 @@ class RealtimeSession(Session[RealtimePlayer]):
 
     def get_realtime_host_info_for(self, player_name: str) -> List[str]:
         player: RealtimePlayer = self.get_player(player_name)
-        if player.has_host_port():
-            return [self.host.ip, str(player.host_port)]
-        else:
-            return ['wait']
+        host_port: str = str(player.host_port) if player.has_host_port() else 'wait'
+        return [str(player.port), self.host.ip, host_port]
 
     def get_realtime_secret(self) -> str:
         return self._realtime_secret
