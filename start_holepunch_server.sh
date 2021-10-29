@@ -17,7 +17,6 @@ while getopts ":p:df" o; do
             force=true
             ;;
         *)
-            usage
             ;;
     esac
 done
