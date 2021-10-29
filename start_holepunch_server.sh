@@ -3,7 +3,7 @@
 usage() { printf "Usage: %s -p <port_to_use> [-d] [-f]\nUse -d to enable debug\nUse -f to force server restart\n" "$0" 1>&2; exit 1; }
 
 debug=""
-force=false
+force=""
 
 while getopts ":p:df" o; do
     case "${o}" in
@@ -14,7 +14,7 @@ while getopts ":p:df" o; do
             debug="DEBUG"
             ;;
         f)
-            force=true
+            force="yes"
             ;;
         *)
             usage
@@ -35,7 +35,7 @@ if [ -z "${server_pid}" ]; then
   printf "Rabid Hole Punch server started on port %s\n" "$port"
 else
   # Server is running
-  if [ $force ]; then
+  if [ -z "$force" ]; then
     kill "${server_pid}"
     pip install -r requirements.txt
     nohup python3 main_holepunch.py "$port" $debug >/dev/null 2>&1 &
