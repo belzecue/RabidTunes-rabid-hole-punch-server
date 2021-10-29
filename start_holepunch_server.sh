@@ -5,7 +5,7 @@ usage() { printf "Usage: %s -p <port_to_use> [-d] [-f]\nUse -d to enable debug\n
 debug=""
 force=false
 
-while getopts ":p:d:f:" o; do
+while getopts ":p:df" o; do
     case "${o}" in
         p)
             port=${OPTARG}
