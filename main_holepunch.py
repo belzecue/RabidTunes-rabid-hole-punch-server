@@ -12,8 +12,8 @@ from server import Server
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
-        print("Usage: ./main.py <port>")
-        print("Run with debug: ./main.py <port> DEBUG")
+        print("Usage: ./main_holepunch.py <port>")
+        print("Run with debug: ./main_holepunch.py <port> DEBUG")
         sys.exit(1)
 
     if len(sys.argv) > 2 and sys.argv[2] == "DEBUG":
