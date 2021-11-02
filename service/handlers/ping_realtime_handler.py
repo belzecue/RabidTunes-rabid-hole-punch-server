@@ -20,7 +20,7 @@ class PingRealtimeHandler(RealtimeSessionManagerHandler, SessionPlayerMessageHan
 
     def handle_message(self, message: str, address: Tuple[str, int]):
         session_name, player_name = self._parse_session_player_message_from(message, address)
-        self._logger.debug(f"Received ping from player {player_name} from session {session_name}. "
+        self._logger.debug(f"Received ping from player {player_name} from realtime session {session_name}. "
                            f"Source: {address}")
 
         try:
